@@ -4,5 +4,10 @@
 # Purpose
 tbd
 # Stack
-tbd
++ Dagster
++ ClickHouse/DuckDB
++ Docker
++ MLFlow / ClearML ?
 
+# Implement
++ Bayesian Bandits
