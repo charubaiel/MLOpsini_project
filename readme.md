@@ -2,12 +2,24 @@
 + Проект для поддержания в форме скиллов
 
 # Purpose
-tbd
-# Stack
-+ Dagster
-+ ClickHouse/DuckDB
-+ Docker
-+ MLFlow / ClearML ?
+Собираем самую гибкую систему по недвиге
 
-# Implement
+# Stack
+Workflow manager
+
++ Dagster
++ Dagit
+
+DataLake
++ ClickHouse/DuckDB
++ S3
+
+Tracking
++ MLFlow
+
+Deploy
++ FastAPI
++ Docker
+
+# Want to Implement
 + Bayesian Bandits
