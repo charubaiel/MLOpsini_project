@@ -12,3 +12,8 @@ ops:
     config:
       fetch_pages: 3
       start_url: "https://www.avito.ru/moskva/kvartiry/prodam/vtorichka-ASgBAQICAUSSA8YQAUDmBxSMUg?cd=1&f=ASgBAQICAkSSA8YQwMENuv03BEDmBxSMUsoIJIRZglmO3g4UApDeDhQC&s=104&p=1"
+
+  cian_page_list:
+    config:
+      fetch_pages: 3
+      start_url: "https://www.cian.ru/cat.php?deal_type=sale&demolished_in_moscow_programm=0&engine_version=2&object_type%5B0%5D=1&offer_type=flat&region=1&room2=1&room3=1&sort=creation_date_desc&wp=1"
