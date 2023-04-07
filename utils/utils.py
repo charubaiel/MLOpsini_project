@@ -13,6 +13,12 @@ ROOT = pathlib.Path(__file__).parent.parent
 with open(f'{ROOT}/pipelines/config.yml') as buffer:
     config = yaml.safe_load(buffer)
 
+with open(f'{ROOT}/pipelines/config_avito.yml') as buffer:
+    config_avito = yaml.safe_load(buffer)
+
+with open(f'{ROOT}/pipelines/config_cian.yml') as buffer:
+    config_cian = yaml.safe_load(buffer)
+
 
 
 

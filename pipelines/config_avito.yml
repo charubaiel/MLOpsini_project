@@ -1,0 +1,14 @@
+resources:
+  db_resource:
+    config:
+      connection: 'data/protodb.db'
+  parser_resource:
+    config:
+      headers: {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36 Edg/97.0.1072.62',
+                'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'}
+      driver_path: 'utils/geckodriver'
+ops:
+  avito_page_list:
+    config:
+      fetch_pages: 3
+      start_url: "https://www.avito.ru/moskva/kvartiry/prodam/vtorichka-ASgBAQICAUSSA8YQAUDmBxSMUg?cd=1&f=ASgBAQICAkSSA8YQwMENuv03BEDmBxSMUsoIJIRZglmO3g4UApDeDhQC&s=104&p=1"

@@ -1,0 +1,14 @@
+resources:
+  db_resource:
+    config:
+      connection: 'data/protodb.db'
+  parser_resource:
+    config:
+      headers: {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36 Edg/97.0.1072.62',
+                'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'}
+      driver_path: 'utils/geckodriver'
+ops:
+  cian_page_list:
+    config:
+      fetch_pages: 3
+      start_url: "https://www.cian.ru/cat.php?deal_type=sale&demolished_in_moscow_programm=0&engine_version=2&object_type%5B0%5D=1&offer_type=flat&region=1&room2=1&room3=1&sort=creation_date_desc&wp=1"
