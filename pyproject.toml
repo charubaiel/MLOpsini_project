@@ -13,6 +13,9 @@ duckdb = "^0.7.1"
 mlflow = "^2.2.2"
 numpy = "^1.24.2"
 fastapi = "^0.95.0"
+dagit = "^1.2.6"
+beautifulsoup4 = "^4.12.2"
+selenium = "^4.8.3"
 
 [tool.poetry.dev-dependencies]
 
