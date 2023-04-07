@@ -43,7 +43,7 @@ def fetch_cian(context) -> list:
 
 @asset(name = 'cian_dataframe',
        compute_kind='bs4',
-       description='Выделение только новых объявлений',
+       description='Парсинг итемов странички',
        group_name='Extract')
 def convert_html_2_df_cian(cian_page_list:list) -> pd.DataFrame:
 
@@ -116,7 +116,7 @@ def save_data_cian(context,featurized_cian_data:pd.DataFrame) -> None:
 
 
 @op(
-    name = 'save_cian_data',
+    name = 'save_cian_data_op',
     description='Сохранение обогащенных данных в базенку',
     required_resource_keys={"db_resource"})
 def save_data(context,featurized_cian_data:pd.DataFrame) -> None:
@@ -127,7 +127,8 @@ def save_data(context,featurized_cian_data:pd.DataFrame) -> None:
 
 
 @graph(
-        name='cleaning_cian'
+        name='cleaning_cian',
+        description='Первичная обработка данных для хранения в бд'
 )
 def cleaning_data(html):
     raw_df = convert_html_2_df_cian(html)
@@ -147,4 +148,4 @@ def cleaning_data(html):
 def cian_upldate_job():
     html_data = fetch_cian()
     featurize_df = cleaning_data(html_data)
-    save_data_cian(featurize_df)
+    save_data(featurize_df)

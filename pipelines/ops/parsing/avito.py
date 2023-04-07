@@ -44,7 +44,7 @@ def fetch_avito(context) -> list :
 
 @asset(name = 'avito_dataframe',
        compute_kind='bs4',
-       description='Выделение только новых объявлений',
+       description='Парсинг итемов странички',
        group_name='Extract')
 def convert_html_2_df_avito(avito_page_list:list) -> pd.DataFrame:
 
@@ -123,7 +123,7 @@ def save_data_avito(context,featurized_avito_data:pd.DataFrame) -> None:
 
 
 @op(
-    name = 'save_avito_data',
+    name = 'save_avito_data_op',
     description='Сохранение обогащенных данных в базенку',
     required_resource_keys={"db_resource"})
 def save_data(context,featurized_avito_data:pd.DataFrame) -> None:
@@ -134,7 +134,8 @@ def save_data(context,featurized_avito_data:pd.DataFrame) -> None:
 
 
 @graph(
-        name='cleaning_avito'
+        name='cleaning_avito',
+        description='Первичная обработка данных для хранения в бд'
 )
 def cleaning_data(html):
     raw_df = convert_html_2_df_avito(html)
@@ -154,4 +155,4 @@ def cleaning_data(html):
 def avito_upldate_job():
     html_data = fetch_avito()
     featurize_df = cleaning_data(html_data)
-    save_data_avito(featurize_df)
+    save_data(featurize_df)
