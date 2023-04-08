@@ -4,10 +4,9 @@ from scipy.spatial.distance import cosine
 import numpy as np 
 import requests
 import pathlib
-from utils.utils import ROOT
 
 
-
+ROOT = pathlib.Path(__file__).parent.parent.parent
 VECTOR_FILEPATH = f'{ROOT}/utils/navec_500k.tar'
 
 if ~pathlib.Path(VECTOR_FILEPATH).exists():
@@ -21,9 +20,17 @@ if ~pathlib.Path(VECTOR_FILEPATH).exists():
 
 navec = Navec.load(VECTOR_FILEPATH)
 
-def check_similarity(text_a,text_b):
+def check_similarity(text_a:str,text_b:str) -> float:
+    
+    vec_a = get_sentence_vector(text_a)
+    vec_b = get_sentence_vector(text_b)
+    try:   
+        return cosine(vec_a,vec_b)
+    except:
+        return None
 
-    vec_a = np.mean((navec.get(word) for word in text_a if navec.get(word) is not None),axis=0)
-    vec_b = np.mean((navec.get(word) for word in text_b if navec.get(word) is not None),axis=0)
+def get_sentence_vector(text:str) -> np.ndarray:
 
-    return vec_a,vec_b
+    sentence_vec = np.mean([navec.get(word) for word in text.lower().split() if navec.get(word) is not None],axis=0)
+
+    return sentence_vec
