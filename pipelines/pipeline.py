@@ -1,8 +1,8 @@
 
 from dagster import define_asset_job,schedule,Definitions,load_assets_from_modules
-from ops.parsing import cian,avito
-from ops.parsing.avito import avito_upldate_job
-from ops.parsing.cian import cian_upldate_job
+from pipelines.ops.parsing import cian,avito
+from pipelines.ops.parsing.avito import avito_upldate_job
+from pipelines.ops.parsing.cian import cian_upldate_job
 from utils.connections import db_resource,parser_resource
 from utils.utils import config
 
