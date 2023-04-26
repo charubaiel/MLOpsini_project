@@ -7,17 +7,38 @@ from utils.utils import get_cian_item_info
 
     
 
+
+
+
+
+@asset(name = 'unprocessed_filenames',
+       compute_kind='s3',
+       description='Сбор данных',
+       required_resource_keys={"s3_resource"},
+       group_name='Extract')
+def get_raw_data(context) -> list:
+
+    s3 = context.resources.s3_resource
+    page_list= s3.get_filenames('raw')
+    
+    return page_list
+
+
+
+
+
 @asset(name = 'cian_dataframe',
        compute_kind='bs4',
        description='Парсинг итемов странички',
-       required_resource_keys={"db_resource"},
+       required_resource_keys={"s3_resource"},
        group_name='Extract')
-def convert_html_2_df_cian(context) -> pd.DataFrame:
+def convert_html_2_df_cian(context,unprocessed_filenames) -> pd.DataFrame:
 
-    db = context.resources.db_resource
+    s3 = context.resources.s3_resource
     result_list = []
-    cian_page_list= ...
-    for page in cian_page_list:
+    page_list= [s3.get_data(name) for name in unprocessed_filenames]
+    
+    for page in page_list:
         
         items = BeautifulSoup(page, features='lxml').findAll('div',{'data-testid':'offer-card'})
 
@@ -54,7 +75,23 @@ def featuring_cian_data(cian_dataframe:pd.DataFrame)->pd.DataFrame:
     group_name='Save',
     compute_kind='SQL',
     required_resource_keys={"db_resource"})
-def save_data_cian(context,featurized_cian_data:pd.DataFrame) -> None:
+def save_data_cian(context,featurized_cian_data:pd.DataFrame) -> str:
 
     db = context.resources.db_resource
-    db.append_df(featurized_cian_data,'cian')
+    db.connection.execute('create schema if not exists intel')
+    db.append_df(featurized_cian_data,'intel.cian')
+    return 'ok'
+
+
+
+@asset(name = 'clear_processed_filenames',
+       compute_kind='s3',
+       description='удаление хлама данных',
+       required_resource_keys={"s3_resource"},
+       group_name='Clean')
+def remove_used_data(context,unprocessed_filenames,save_cian_data) -> None:
+    if save_cian_data == 'ok':
+        s3 = context.resources.s3_resource
+        [s3.remove_data(file) for file in unprocessed_filenames]
+    
+

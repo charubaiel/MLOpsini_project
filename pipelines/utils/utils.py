@@ -3,16 +3,9 @@ import pathlib
 import warnings
 
 import pandas as pd
-import yaml
 from bs4 import BeautifulSoup
 
 warnings.simplefilter('ignore')
-ROOT = pathlib.Path(__file__).parent
-
-
-with open(f'{ROOT}/config.yml') as buffer:
-    config = yaml.safe_load(buffer)
-
 
 
 

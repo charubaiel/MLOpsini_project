@@ -1,10 +1,19 @@
 
-from dagster import StaticPartitionsDefinition,Definitions,define_asset_job,schedule,sensor,load_assets_from_modules
+from dagster import StaticPartitionsDefinition,Definitions,define_asset_job,schedule,load_assets_from_modules
 from parse.ops import cian
 from utils.connections import db_resource,parser_resource,s3_resource
-from utils.utils import config
+import yaml
+from pathlib import Path
 
+ROOT = Path(__file__).parent
+
+
+
+with open(f'{ROOT}/config.yml') as buffer:
+    config = yaml.safe_load(buffer)
 partitions = StaticPartitionsDefinition(['room1','room2','room3'])
+
+
 
 parse_job = define_asset_job(name='update_data',
                             config=config,

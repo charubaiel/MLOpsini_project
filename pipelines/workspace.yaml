@@ -1,2 +1,3 @@
 load_from:
-  - python_file: parse/pipeline.py
+  - python_file: parse/pipeline_parse.py
+  - python_file: featurize/pipeline_transform.py

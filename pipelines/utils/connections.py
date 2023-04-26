@@ -29,12 +29,6 @@ class DatabaseConnection:
             CREATE TABLE IF NOT EXISTS {table_name} as select * from df TABLESAMPLE 0;
             INSERT INTO {table_name}({",".join(df.columns)}) select * from df;
             ''')
-        
-    def get_last_update_data(self,
-                            table_name:str) -> pd.DataFrame:
-        self.connection.execute(f'''
-            select * from {table_name} where last_update == max(last_update)
-            ''')
 
 
 
@@ -51,8 +45,30 @@ class S3Connection:
                     name:str,
                     file:BytesIO) -> None:
         
-        with open(f'{self.path}/{bucket}/{name}',mode='w') as buffer:
-            buffer.write(file.read().decode())
+        with open(f'{self.path}/{bucket}/{name}',mode='wb') as buffer:
+            file.seek(0)
+            buffer.write(file.read())
+
+    
+    def get_filenames(self,
+                        bucket:str) -> list:
+        
+        result = []
+        files_ = Path(f'{self.path}/{bucket}').glob('*')
+        
+        for file in files_:
+                result.append(file)
+        return result
+    
+    def get_data(self,
+                filename:str) -> str:
+        
+        with open(filename) as buffer:
+            return buffer.read()
+    
+    def remove_data(self,
+                filename:str) -> None:
+        Path(filename).unlink()
 
 
 

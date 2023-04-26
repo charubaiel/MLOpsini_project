@@ -4,7 +4,7 @@ import time
 from io import BytesIO
 import hashlib
 import pandas as pd
-from parse.pipeline import partitions
+from parse.pipeline_parse import partitions
 
 
 
@@ -20,8 +20,10 @@ def fetch_cian(context) -> list:
 
     parser = context.resources.parser_resource
     partition = context.asset_partition_key_for_output()
-    url = context.op_config['start_url'] + '&'.join(context.op_config['params'])
+    params = '&'.join([f'{k}={v}' for k,v in context.op_config['params'].items()])
+    url = context.op_config['start_url'] + params
     url = url.replace('room1',f'{partition}')
+    context.log.warning(url)
     parser.get('https://google.com')
     parser.get('https://ya.ru')
     parser.get('https://cian.ru')
@@ -43,29 +45,29 @@ def fetch_cian(context) -> list:
 
 
        
-# @asset(
-#     name = 'raw_page_save_db',
-#     description='Сохранение обогащенных данных в базенку',
-#     group_name='Save',
-#     compute_kind='SQL',
-#     partitions_def=partitions,
-#     required_resource_keys={"db_resource"}
-#     )
-# def save_data_db(context,page_list:list) -> None:
+@asset(
+    name = 'raw_page_save_db',
+    description='Сохранение обогащенных данных в базенку',
+    group_name='Save',
+    compute_kind='SQL',
+    partitions_def=partitions,
+    required_resource_keys={"db_resource"}
+    )
+def save_data_db(context,page_list:list) -> None:
     
-#     result_ = {
-#         'page_hash':[],
-#         'page_html':[],
-#         'update_date':[pd.to_datetime('now',utc=True).value]*len(page_list),
-#     }
-#     for page in page_list:
-#         result_['page_hash'].append(hashlib.md5(page.read()).hexdigest())
-#         result_['page_html'].append(page.read())
+    result_ = {
+        'page_hash':[],
+        'page_html':[],
+        'update_date':[pd.to_datetime('now',utc=True).value]*len(page_list),
+    }
+    for page in page_list:
+        result_['page_hash'].append(hashlib.md5(page.read()).hexdigest())
+        result_['page_html'].append(page.read())
         
-#     result_df = pd.DataFrame(result_)
-#     db = context.resources.db_resource
-#     db.connection.execute('create schema if not exists raw')
-#     db.append_df(result_df,'raw.cian') 
+    result_df = pd.DataFrame(result_)
+    db = context.resources.db_resource
+    db.connection.execute('create schema if not exists raw')
+    db.append_df(result_df,'raw.cian') 
 
 
    
