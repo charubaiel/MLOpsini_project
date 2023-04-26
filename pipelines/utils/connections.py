@@ -7,7 +7,6 @@ import cloudscraper
 from pathlib import Path
 
 ROOT = Path(__file__).parent
-GEKO_DRIVER_PATH = f'{ROOT}/geckodriver'
 
 
 @dataclass

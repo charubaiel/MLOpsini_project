@@ -1,2 +1,2 @@
 load_from:
-  - python_file: pipelines/pipeline.py
+  - python_file: parse/pipeline.py

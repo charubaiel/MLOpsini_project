@@ -4,12 +4,9 @@ from parse.ops import cian
 from utils.connections import db_resource,parser_resource
 from utils.utils import config
 
-partitions = StaticPartitionsDefinition(['room1','room2','room3'])
-
 
 parse_job = define_asset_job(name='update_data',
                             config=config,
-                            partitions_def=partitions,
                             tags={"dagster/max_retries": 1, 
                                 "dagster/retry_strategy": "FROM FAILURE"}
                                 )

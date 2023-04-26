@@ -1,31 +1,34 @@
 from dagster import asset
-from utils.utils import get_cian_item_info
-import pandas as pd
 import numpy as np 
 import time
-from bs4 import BeautifulSoup
 from io import BytesIO
+import hashlib
+import pandas as pd
+from parse.pipeline import partitions
 
 
 
 
 @asset(
-    name = 'cian_page_list',
+    name = 'page_list',
     description='Получение сырых HTML',
     group_name='Download',
     compute_kind='HTML',
+    partitions_def=partitions,
     required_resource_keys={"parser_resource"})
 def fetch_cian(context) -> list:
 
     parser = context.resources.parser_resource
-    url = context.op_config['start_url']
+    partition = context.asset_partition_key_for_output()
+    url = context.op_config['start_url'] + '&'.join(context.op_config['params'])
+    url = url.replace('room1',f'{partition}')
     parser.get('https://google.com')
     parser.get('https://ya.ru')
     parser.get('https://cian.ru')
     page_list = []
     
     for page in range(1, context.op_config['fetch_pages']):
-
+ 
         response = parser.get(url)
         context.log.info(len(response))
         time.sleep(np.random.poisson(2))
@@ -39,6 +42,31 @@ def fetch_cian(context) -> list:
 
 
 
+       
+@asset(
+    name = 'raw_page_save',
+    description='Сохранение обогащенных данных в базенку',
+    group_name='Save',
+    compute_kind='SQL',
+    partitions_def=partitions,
+    required_resource_keys={"db_resource"})
+def save_data_cian(context,page_list:list) -> None:
+    
+    result_ = {
+        'page_hash':[],
+        'page_html':[],
+        'update_date':[pd.to_datetime('now',utc=True).value]*len(page_list),
+    }
+    for page in page_list:
+        result_['page_hash'].append(hashlib.md5(page.read()).hexdigest())
+        result_['page_html'].append(page.read())
+        
+    result_df = pd.DataFrame(result_)
+    db = context.resources.db_resource
+    db.connection.execute('create schema if not exists raw')
+    db.append_df(result_df,'raw.cian') 
+
+    
 
 # @asset(name = 'cian_dataframe',
 #        compute_kind='bs4',
