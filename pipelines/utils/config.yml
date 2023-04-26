@@ -2,6 +2,9 @@ resources:
   db_resource:
     config:
       connection: '../data/protodb.db'
+  s3_resource:
+    config:
+      auth: 'hehe'
 ops:
   page_list:
     config:

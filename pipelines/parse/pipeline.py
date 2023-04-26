@@ -1,11 +1,10 @@
 
-from dagster import StaticPartitionsDefinition,Definitions,define_asset_job,schedule,load_assets_from_modules
+from dagster import StaticPartitionsDefinition,Definitions,define_asset_job,schedule,sensor,load_assets_from_modules
 from parse.ops import cian
-from utils.connections import db_resource,parser_resource
+from utils.connections import db_resource,parser_resource,s3_resource
 from utils.utils import config
 
 partitions = StaticPartitionsDefinition(['room1','room2','room3'])
-
 
 parse_job = define_asset_job(name='update_data',
                             config=config,
@@ -23,14 +22,16 @@ def parsing_schedule():
     return {}
 
 
-
 all_assets = load_assets_from_modules([cian])
 
 defs = Definitions(
     assets=all_assets,
     jobs=[parse_job],
     schedules=[parsing_schedule],
-    resources={"db_resource": db_resource,
-               'parser_resource':parser_resource}
+    resources={
+            "db_resource": db_resource,
+               'parser_resource':parser_resource,
+               's3_resource':s3_resource,
+               }
 )
 

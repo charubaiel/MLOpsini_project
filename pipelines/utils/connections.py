@@ -5,7 +5,7 @@ from dagster import resource
 from contextlib import contextmanager
 import cloudscraper
 from pathlib import Path
-
+from io import BytesIO
 ROOT = Path(__file__).parent
 
 
@@ -24,11 +24,38 @@ class DatabaseConnection:
 
     def append_df(self,
                   df:pd.DataFrame,
-                  table_name:str):
+                  table_name:str) -> None:
         self.connection.execute(f'''
             CREATE TABLE IF NOT EXISTS {table_name} as select * from df TABLESAMPLE 0;
             INSERT INTO {table_name}({",".join(df.columns)}) select * from df;
             ''')
+        
+    def get_last_update_data(self,
+                            table_name:str) -> pd.DataFrame:
+        self.connection.execute(f'''
+            select * from {table_name} where last_update == max(last_update)
+            ''')
+
+
+
+@dataclass
+class S3Connection:
+
+    path: str = f'{ROOT.parent.parent}/data'
+
+    def __post_init__(self):
+        self.s3 = 'future_bucket'
+
+    def save_file(self,
+                    bucket:str,
+                    name:str,
+                    file:BytesIO) -> None:
+        
+        with open(f'{self.path}/{bucket}/{name}',mode='w') as buffer:
+            buffer.write(file.read().decode())
+
+
+
 
 
 @dataclass
@@ -67,6 +94,15 @@ def db_resource(init_context):
         yield db_conn
     finally :
         db_conn.close()
+
+
+
+@resource(config_schema={"auth": str})
+def s3_resource(init_context):
+
+    auth = init_context.resource_config["auth"]
+    s3_conn = S3Connection()
+    yield s3_conn
 
 
 @resource()

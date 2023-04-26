@@ -10,9 +10,11 @@ from utils.utils import get_cian_item_info
 @asset(name = 'cian_dataframe',
        compute_kind='bs4',
        description='Парсинг итемов странички',
+       required_resource_keys={"db_resource"},
        group_name='Extract')
-def convert_html_2_df_cian() -> pd.DataFrame:
+def convert_html_2_df_cian(context) -> pd.DataFrame:
 
+    db = context.resources.db_resource
     result_list = []
     cian_page_list= ...
     for page in cian_page_list:
