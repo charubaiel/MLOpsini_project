@@ -1,8 +1,6 @@
 
 from dagster import define_asset_job,schedule,Definitions,load_assets_from_modules
-from pipelines.ops.parsing import cian,avito
-from pipelines.ops.parsing.avito import avito_upldate_job
-from pipelines.ops.parsing.cian import cian_upldate_job
+from parse.ops import cian
 from utils.connections import db_resource,parser_resource
 from utils.utils import config
 
@@ -22,13 +20,11 @@ def parsing_schedule():
 
 
 
-all_assets = load_assets_from_modules([cian,avito])
+all_assets = load_assets_from_modules([cian])
 
 defs = Definitions(
     assets=all_assets,
-    jobs=[parse_job,
-          cian_upldate_job,
-          avito_upldate_job
+    jobs=[parse_job
           ],
     schedules=[parsing_schedule],
     resources={"db_resource": db_resource,
