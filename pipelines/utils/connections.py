@@ -45,9 +45,14 @@ class S3Connection:
                     name:str,
                     file:BytesIO) -> None:
         
-        with open(f'{self.path}/{bucket}/{name}',mode='wb') as buffer:
+        filepath = Path(f'{self.path}/{bucket}/{name}')
+        if not filepath.parent.exists():
+            filepath.parent.mkdir(parents=True, exist_ok=True)
+
+        with filepath.open("wb", encoding ="utf-8") as f:
             file.seek(0)
-            buffer.write(file.read())
+            f.write(file.read())
+
 
     
     def get_filenames(self,
