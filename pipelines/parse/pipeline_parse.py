@@ -9,7 +9,6 @@ from pathlib import Path
 ROOT = Path(__file__).parent
 
 
-
 with open(f'{ROOT}/config.yml') as buffer:
     config = yaml.safe_load(buffer)
 

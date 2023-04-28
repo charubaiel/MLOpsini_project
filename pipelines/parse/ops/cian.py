@@ -5,9 +5,8 @@ from io import BytesIO
 import hashlib
 import pandas as pd
 
-
-partitions = StaticPartitionsDefinition(['room1','room2','room3'])
-
+partition_keys = ['room1','room2','room3']
+partitions = StaticPartitionsDefinition(partition_keys)
 
 @asset(
     name = 'page_list',
