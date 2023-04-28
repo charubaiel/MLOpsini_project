@@ -1,7 +1,11 @@
 from dagster import asset
 import pandas as pd
 from bs4 import BeautifulSoup
-from utils.utils import get_cian_item_info
+from utils.utils import (get_cian_item_info,
+                        get_geo_features,
+                        get_text_features,
+                        get_title_features
+                        )
 
 
 
@@ -57,15 +61,18 @@ def convert_html_2_df_cian(context,unprocessed_filenames) -> pd.DataFrame:
        group_name='Featurize')
 def featuring_cian_data(cian_dataframe:pd.DataFrame)->pd.DataFrame:
 
-    cian_dataframe['price'] = cian_dataframe['price'].astype(float)
-    cian_dataframe[['rooms','m2','floor']] = cian_dataframe['title'].str.replace(',(?=\d)','.').str.split(',',expand=True)
-    cian_dataframe['m2'] = cian_dataframe['m2'].str.extract('(\d+).*м²').astype(float)
-    cian_dataframe[['floor','max_floor']] = cian_dataframe['floor'].str.extract('(\d+/\d+).*эт')[0].str.split('/',expand=True).astype(float)
-    cian_dataframe['text'] = cian_dataframe['text'].str.replace('\n+','').str.replace(' +',' ')
-    cian_dataframe['rubm2'] = cian_dataframe['price'] / cian_dataframe['m2']
-    cian_dataframe.drop(['title'],axis=1,inplace=True)
 
-    return cian_dataframe
+    geo_features = get_geo_features(cian_dataframe.loc[:,['Улица','Дом']].fillna('').apply(', '.join,axis=1))
+    text_features = get_text_features(cian_dataframe['text'].str.lower())
+    title_features = get_title_features(cian_dataframe['title'].str.lower())
+    
+    cian_dataframe['price'] = cian_dataframe['price'].astype(float)
+    cian_dataframe['rubm2'] = cian_dataframe['price'] / cian_dataframe['m2']
+    
+    cian_dataframe.drop(['title'],axis=1,inplace=True)
+    
+
+    return cian_dataframe.join(title_features).join(geo_features).join(text_features)
 
 
 

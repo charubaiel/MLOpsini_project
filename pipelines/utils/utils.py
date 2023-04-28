@@ -1,12 +1,13 @@
 
-import pathlib
 import warnings
-
+import geopy
+import re
 import pandas as pd
 from bs4 import BeautifulSoup
+from geopy import distance
 
+gp = geopy.Nominatim(user_agent='geo_features',timeout=1.44)
 warnings.simplefilter('ignore')
-
 
 
 def get_avito_item_info(item:BeautifulSoup):
@@ -67,4 +68,65 @@ def checksum_items(page:str) -> list:
 
     return new_items
     
+def get_geo_features(adresses:pd.Series) -> pd.DataFrame:
     
+    result = {}
+
+    _center = gp.geocode('Москва Красная площадь').point
+    indexes = adresses.progress_apply(gp.geocode)
+    postcode = indexes.apply(lambda x: re.findall('\d{5,}',x.address)[0] if x is not None else x)
+    latitude = indexes.apply(lambda x: x.latitude if x is not None else x)
+    longtitude = indexes.apply(lambda x: x.longitude if x is not None else x)
+    centreness = indexes.apply(lambda x: distance.distance(x.point,_center).km if x is not None else x)
+
+    result.update({
+        'postcode':postcode,
+        'lat':latitude,
+        'long':longtitude,
+        'dist_to_center':centreness}
+    )
+
+    return pd.DataFrame(result)
+
+def get_text_features(text_series:pd.Series) -> pd.DataFrame:
+
+    result = {}
+
+    is_lot = text_series.str.contains('\d{5,}')
+    is_jk = text_series.str.contains('жк')
+    has_park = text_series.str.contains('\\bпарк\\b')
+    wc_type = (text_series.str.extract('санузел (\w{2,})').iloc[:,0].fillna('') + 
+                text_series.str.extract('(\w{2,}) санузел').iloc[:,0].fillna('')
+    ).where(lambda x: x!='')
+
+    result.update(
+        {
+            'is_lot':is_lot,
+            'is_jk':is_jk,
+            'wc_type':wc_type,
+            'has_park':has_park,
+        }
+    )
+
+    return pd.DataFrame(result)
+
+
+def get_title_features(title_series:pd.Series) -> pd.DataFrame:
+
+    result = {}
+    rooms,m2,floor = title_series.str.replace(',(?=\d)','.').str.split(',',expand=True)
+    floor,max_floor = floor.str.extract('(\d+/\d+).*эт')[0].str.split('/',expand=True).astype(float)
+    m2 = m2.str.extract('(\d+).*м²').astype(float)
+    is_max_floor = floor == max_floor
+
+    result.update(
+        {
+            'rooms':rooms,
+            'm2':m2,
+            'floor':floor,
+            'max_floor':max_floor,
+            'is_max_floor':is_max_floor,
+        }
+    )
+
+    return pd.DataFrame(result)
