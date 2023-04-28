@@ -1,12 +1,12 @@
-from dagster import asset
+from dagster import asset,StaticPartitionsDefinition
 import numpy as np 
 import time
 from io import BytesIO
 import hashlib
 import pandas as pd
-from parse.pipeline_parse import partitions
 
 
+partitions = StaticPartitionsDefinition(['room1','room2','room3'])
 
 
 @asset(

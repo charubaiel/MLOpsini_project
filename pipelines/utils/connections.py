@@ -49,7 +49,7 @@ class S3Connection:
         if not filepath.parent.exists():
             filepath.parent.mkdir(parents=True, exist_ok=True)
 
-        with filepath.open("wb", encoding ="utf-8") as f:
+        with filepath.open("wb") as f:
             file.seek(0)
             f.write(file.read())
 

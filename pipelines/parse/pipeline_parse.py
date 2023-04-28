@@ -1,6 +1,7 @@
 
-from dagster import StaticPartitionsDefinition,Definitions,define_asset_job,schedule,load_assets_from_modules
+from dagster import Definitions,define_asset_job,schedule,load_assets_from_modules
 from parse.ops import cian
+from parse.ops.cian import partitions
 from utils.connections import db_resource,parser_resource,s3_resource
 import yaml
 from pathlib import Path
@@ -11,7 +12,6 @@ ROOT = Path(__file__).parent
 
 with open(f'{ROOT}/config.yml') as buffer:
     config = yaml.safe_load(buffer)
-partitions = StaticPartitionsDefinition(['room1','room2','room3'])
 
 
 
