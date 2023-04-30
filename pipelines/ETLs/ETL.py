@@ -48,7 +48,7 @@ def parsing_schedule():
 
 @sensor(
     job=featurize_job,
-    minimum_interval_seconds=5,
+    minimum_interval_seconds=60*60,
     default_status=DefaultSensorStatus.RUNNING
 )
 def check_updates():

@@ -32,7 +32,7 @@ def get_raw_data(context) -> list:
 
 
 
-@asset(name = 'cian_dataframe',
+@asset(name = 'cian_raw_dataframe',
        compute_kind='bs4',
        description='Парсинг итемов странички',
        required_resource_keys={"s3_resource"},
@@ -64,6 +64,33 @@ def convert_html_2_df_cian(context,unprocessed_filenames) -> pd.DataFrame:
     return result
 
 
+@asset(name = 'cian_dataframe',
+       compute_kind='bs4',
+       description='Оставление уникальных значений',
+       required_resource_keys={"db_resource"},
+       group_name='Extract')
+def pass_new_data(context,cian_raw_dataframe:pd.DataFrame) -> pd.DataFrame:
+
+    db = context.resources.db_resource
+    
+    try:
+        uniq_results = db.connection.execute('select distinct url,price from intel.cian').df()
+        check_new = set(cian_raw_dataframe[['url','price']].apply(tuple,axis=1))
+        check_old = set(uniq_results[['url','price']].apply(tuple,axis=1))
+        diff_ = check_old - check_new
+        if len(diff_) >0:
+            new_urls_filter = [url[0] for url in diff_]
+            cian_dataframe = cian_raw_dataframe.query('url.isin(@new_urls_filter)')
+    except Exception as e:
+        cian_dataframe = cian_raw_dataframe
+        
+        db.connection.execute('create schema if not exists intel')
+        context.log.warning(f'MESSAGE : {e}\n\nNew table creation')
+
+
+    return cian_dataframe
+
+
 
 @asset( compute_kind='Python',
        description='Получение фичей на основе гео данных',
@@ -73,9 +100,9 @@ def geo_features(cian_dataframe:pd.DataFrame) -> pd.DataFrame:
     result = {}
     adresses = cian_dataframe.loc[:,['Улица','Дом']].fillna('').apply(', '.join,axis=1)
     _center = geocode('Москва Красная площадь').point
-    geo_data = adresses.apply(geocode)
+    geo_data = adresses.progress_apply(geocode)
 
-    postcode = geo_data.apply(lambda x: re.findall('\d{5,}',x.address)[0] if x is not None else x)
+    postcode = geo_data.apply(lambda x: re.findall('\d{5,}',x.address) if x is not None else x)
     latitude = geo_data.apply(lambda x: x.latitude if x is not None else x)
     longtitude = geo_data.apply(lambda x: x.longitude if x is not None else x)
     centreness = geo_data.apply(lambda x: distance.distance(x.point,_center).km if x is not None else x)
@@ -137,13 +164,13 @@ def title_features(cian_dataframe:pd.DataFrame) -> pd.DataFrame:
 @asset( compute_kind='Python',
        description='Получение дополнительных фичей из базы МинЖКХ',
        group_name='Featurize')
-def advanced_home_features(cian_dataframe:pd.DataFrame) -> pd.DataFrame:
+def advanced_home_features(cian_dataframe:pd.DataFrame) -> pd.Series:
     result_list = {}
     home_adress_df = cian_dataframe.loc[:,['Город','Округ','Улица','Дом']].fillna('')
     for idx in tqdm(home_adress_df.index,total=home_adress_df.shape[0]):
         result_list[idx] = get_advanced_home_data(home_adress_df.fillna('').loc[idx].to_dict())
 
-    return pd.DataFrame(result_list).T
+    return pd.Series(result_list,name='advanced_home_info')
 
 
 
@@ -157,11 +184,9 @@ def featuring_cian_data(
                         title_features:pd.DataFrame,
                         geo_features:pd.DataFrame,
                         text_features:pd.DataFrame,
-                        advanced_home_features:pd.DataFrame,
+                        advanced_home_features:pd.Series,
                         )->pd.DataFrame:
 
-    cian_dataframe['price'] = cian_dataframe['price'].astype(float)
-    cian_dataframe['rubm2'] = cian_dataframe['price'] / cian_dataframe['m2']
     
     cian_dataframe.drop(['title'],axis=1,inplace=True)
     
@@ -169,6 +194,12 @@ def featuring_cian_data(
                             .join(geo_features)\
                             .join(text_features)\
                             .join(advanced_home_features)
+    
+    
+    result['price'] = result['price'].astype(float)
+    result['rubm2'] = result['price'] / result['m2']
+    result = result.rename(columns=lambda x: x.replace(' ','_'))
+
     return result
 
 
@@ -185,7 +216,6 @@ def featuring_cian_data(
 def save_data_cian(context,featurized_cian_data:pd.DataFrame) -> str:
 
     db = context.resources.db_resource
-    db.connection.execute('create schema if not exists intel')
     db.append_df(featurized_cian_data,'intel.cian')
     return 'ok'
 

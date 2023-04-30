@@ -1,6 +1,5 @@
 
 import warnings
-import re
 import pandas as pd
 from bs4 import BeautifulSoup
 from geopy import distance
@@ -17,11 +16,16 @@ SLEEP_SECONDS = 5
 BASE_SEARCH_URL = 'https://dom.mingkh.ru/search?searchtype=house&address='
 BASE_URL = 'https://dom.mingkh.ru'
 
-
-geolocator = Nominatim(user_agent="geo_features_cian")
-geocode = RateLimiter(geolocator.geocode, min_delay_seconds=RATE_REQUEST_LIMIT,max_retries=2)
+geolocator = Nominatim(
+    timeout=10,
+    user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36')
+geocode = RateLimiter(geolocator.geocode,
+                    min_delay_seconds=RATE_REQUEST_LIMIT,
+                    max_retries=2,
+                    error_wait_seconds =SLEEP_SECONDS)
 
 warnings.simplefilter('ignore')
+
 
 
 
@@ -95,79 +99,6 @@ def get_cian_item_info(item:BeautifulSoup):
 
 
 
-def checksum_items(page:str) -> list:
-
-    bs_data = BeautifulSoup(page, features='lxml')
-    result = bs_data.find('div', {'class': 'items-items-kAJAg'}).findAll('div', {'data-marker': 'item'})
-
-    new_items = [item for item in result ]
-    
-
-    return new_items
-    
-def get_geo_features(adresses:pd.Series) -> pd.DataFrame:
-    
-    result = {}
-    _center = geocode('Москва Красная площадь').point
-    indexes = adresses.apply(geocode)
-    postcode = indexes.apply(lambda x: re.findall('\d{5,}',x.address) if x is not None else x)
-    latitude = indexes.apply(lambda x: x.latitude if x is not None else x)
-    longtitude = indexes.apply(lambda x: x.longitude if x is not None else x)
-    centreness = indexes.apply(lambda x: distance.distance(x.point,_center).km if x is not None else x)
-
-    result.update({
-        'postcode':postcode,
-        'lat':latitude,
-        'long':longtitude,
-        'dist_to_center':centreness}
-    )
-
-    return pd.DataFrame(result)
-
-def get_text_features(text_series:pd.Series) -> pd.DataFrame:
-
-    result = {}
-
-    is_lot = text_series.str.contains('\d{5,}')
-    is_jk = text_series.str.contains('жк')
-    has_park = text_series.str.contains('\\bпарк\\b')
-    wc_type = (text_series.str.extract('санузел (\w{2,})').iloc[:,0].fillna('') + 
-                text_series.str.extract('(\w{2,}) санузел').iloc[:,0].fillna('')
-    ).where(lambda x: x!='')
-
-    result.update(
-        {
-            'is_lot':is_lot,
-            'is_jk':is_jk,
-            'wc_type':wc_type,
-            'has_park':has_park,
-        }
-    )
-
-    return pd.DataFrame(result)
-
-
-def get_title_features(title_series:pd.Series) -> pd.DataFrame:
-
-    result = {}
-    rooms,m2,floor = title_series.str.replace(',(?=\d)','.').str.split(',',expand=True)
-    floor,max_floor = floor.str.extract('(\d+/\d+).*эт')[0].str.split('/',expand=True).astype(float)
-    m2 = m2.str.extract('(\d+).*м²').astype(float)
-    is_max_floor = floor == max_floor
-
-    result.update(
-        {
-            'rooms':rooms,
-            'm2':m2,
-            'floor':floor,
-            'max_floor':max_floor,
-            'is_max_floor':is_max_floor,
-        }
-    )
-
-    return pd.DataFrame(result)
-
-
 @retry()
 def search_home_url(adress_dict:dict) -> str:
 
@@ -188,10 +119,9 @@ def search_home_url(adress_dict:dict) -> str:
 
     return result
 
-
 @retry()
 def parse_home_page(url: str) -> pd.Series:
-    time.sleep(RATE_REQUEST_LIMIT)
+    time.sleep(RATE_REQUEST_LIMIT/1.44)
     full_url = BASE_URL + url
     _id = url.split('/')[-1]
     df_list = pd.read_html(full_url)
@@ -207,7 +137,8 @@ def parse_home_page(url: str) -> pd.Series:
     result = home_data.reset_index().drop_duplicates().pipe(
         lambda x: x.loc[x.iloc[:,0]!=x.iloc[:,1]]
     ).set_index('id')
-    return result.T.assign(url=url).T.iloc[:,0]
+    
+    return result.T.rename(columns=lambda x: x.replace(' ','_')).assign(jkh_url=url).T.iloc[:,0]
 
 
 
@@ -217,10 +148,3 @@ def get_advanced_home_data(name_series:pd.Series) -> dict:
     result = parse_home_page(url_)
 
     return result.to_dict()
-
-def get_advanced_home_features(home_adress_df:pd.DataFrame) -> pd.DataFrame:
-    result_list = {}
-    for idx in home_adress_df.index:
-        result_list[idx] = get_advanced_home_data(home_adress_df.fillna('').loc[idx].to_dict())
-
-    return pd.DataFrame(result_list).T
