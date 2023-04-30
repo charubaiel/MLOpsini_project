@@ -1,10 +1,11 @@
 
 from dagster import define_asset_job,schedule,sensor,load_assets_from_modules
-from dagster import Definitions,DefaultSensorStatus,RunRequest
+from dagster import Definitions,DefaultSensorStatus,DefaultScheduleStatus,RunRequest
 from ETLs.ops import parse,featurize
 from ETLs.ops.parse import partitions
 from utils.connections import db_resource,parser_resource,s3_resource
 import yaml
+import numpy as np
 from pathlib import Path
 
 ROOT = Path(__file__).parent
@@ -38,13 +39,28 @@ featurize_job = define_asset_job(name='featurize_data',
 
 
 @schedule(
-    cron_schedule="34 */18 * * *",
+    cron_schedule="*/44 10-22 * * *",
     job=parse_job,
+    default_status=DefaultScheduleStatus.RUNNING,
     execution_timezone="Europe/Moscow",
 )
 def parsing_schedule():
+    run_config = config.copy()
+    run_config['ops']['page_list']['config']['fetch_pages'] = 1
+    if np.random.beta(1,1) >= .5:
+        return RunRequest(run_config=run_config)
     return {}
 
+# @sensor(
+#     job=parse_job,
+#     minimum_interval_seconds=60*60,
+#     default_status=DefaultSensorStatus.RUNNING
+# )
+# def random_parse_start():
+#     run_config = config.copy()
+#     run_config['ops']['page_list']['config']['fetch_pages'] = 1
+#     if np.random.beta(1,1) >= .5:
+#         return RunRequest(run_config=run_config)
 
 @sensor(
     job=featurize_job,
@@ -66,8 +82,8 @@ defs = Definitions(
     schedules=[parsing_schedule],
     resources={
             "db_resource": db_resource,
-               'parser_resource':parser_resource,
-               's3_resource':s3_resource,
+            'parser_resource':parser_resource,
+            's3_resource':s3_resource,
                }
 )
 

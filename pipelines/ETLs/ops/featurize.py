@@ -32,7 +32,7 @@ def get_raw_data(context) -> list:
 
 
 
-@asset(name = 'cian_raw_dataframe',
+@asset(name = 'cian_raw_df',
        compute_kind='bs4',
        description='Парсинг итемов странички',
        required_resource_keys={"s3_resource"},
@@ -64,41 +64,40 @@ def convert_html_2_df_cian(context,unprocessed_filenames) -> pd.DataFrame:
     return result
 
 
-@asset(name = 'cian_dataframe',
+@asset(name = 'cian_df',
        compute_kind='bs4',
        description='Оставление уникальных значений',
        required_resource_keys={"db_resource"},
        group_name='Extract')
-def pass_new_data(context,cian_raw_dataframe:pd.DataFrame) -> pd.DataFrame:
+def pass_new_data(context,cian_raw_df:pd.DataFrame) -> pd.DataFrame:
 
     db = context.resources.db_resource
-    
+    cian_df = cian_raw_df
     try:
         uniq_results = db.connection.execute('select distinct url,price from intel.cian').df()
-        check_new = set(cian_raw_dataframe[['url','price']].apply(tuple,axis=1))
-        check_old = set(uniq_results[['url','price']].apply(tuple,axis=1))
-        diff_ = check_old - check_new
-        if len(diff_) >0:
-            new_urls_filter = [url[0] for url in diff_]
-            cian_dataframe = cian_raw_dataframe.query('url.isin(@new_urls_filter)')
     except Exception as e:
-        cian_dataframe = cian_raw_dataframe
-        
-        db.connection.execute('create schema if not exists intel')
         context.log.warning(f'MESSAGE : {e}\n\nNew table creation')
-
-
-    return cian_dataframe
+        db.connection.execute('create schema if not exists intel')
+    check_new = set(cian_raw_df[['url','price']].apply(tuple,axis=1))
+    check_old = set(uniq_results[['url','price']].apply(tuple,axis=1))
+    diff_ = check_old - check_new
+    if len(diff_) >0:
+        new_urls_filter = [url[0] for url in diff_]
+        cian_df = cian_raw_df.query('url.isin(@new_urls_filter)')
+    else:
+        raise ValueError('No New Updates to load')
+        
+    return cian_df
 
 
 
 @asset( compute_kind='Python',
        description='Получение фичей на основе гео данных',
        group_name='Featurize')
-def geo_features(cian_dataframe:pd.DataFrame) -> pd.DataFrame:
+def geo_features(cian_df:pd.DataFrame) -> pd.DataFrame:
     
     result = {}
-    adresses = cian_dataframe.loc[:,['Улица','Дом']].fillna('').apply(', '.join,axis=1)
+    adresses = cian_df.loc[:,['Улица','Дом']].fillna('').apply(', '.join,axis=1)
     _center = geocode('Москва Красная площадь').point
     geo_data = adresses.progress_apply(geocode)
 
@@ -121,10 +120,10 @@ def geo_features(cian_dataframe:pd.DataFrame) -> pd.DataFrame:
 @asset( compute_kind='Python',
        description='Получение фичей из текста объявления',
        group_name='Featurize')
-def text_features(cian_dataframe:pd.DataFrame) -> pd.DataFrame:
+def text_features(cian_df:pd.DataFrame) -> pd.DataFrame:
 
     result = {}
-    text_series = cian_dataframe['text'].str.lower()
+    text_series = cian_df['text'].str.lower()
 
     is_lot = text_series.str.contains('\d{5,}')
     is_jk = text_series.str.contains('жк')
@@ -148,9 +147,9 @@ def text_features(cian_dataframe:pd.DataFrame) -> pd.DataFrame:
 @asset( compute_kind='Python',
        description='Выделение фичей из тайтла объявления',
        group_name='Featurize')
-def title_features(cian_dataframe:pd.DataFrame) -> pd.DataFrame:
+def title_features(cian_df:pd.DataFrame) -> pd.DataFrame:
 
-    title_series = cian_dataframe['title'].str.lower().to_frame()
+    title_series = cian_df['title'].str.lower().to_frame()
     title_series[['rooms','m2','floor']] = title_series['title'].str.replace(',(?=\d)','.').str.split(',',expand=True)
 
     title_series[['floor','max_floor']] = title_series['floor'].str.extract('(\d+/\d+).*эт').iloc[:,0].str.split('/',expand=True).astype(float)
@@ -164,9 +163,9 @@ def title_features(cian_dataframe:pd.DataFrame) -> pd.DataFrame:
 @asset( compute_kind='Python',
        description='Получение дополнительных фичей из базы МинЖКХ',
        group_name='Featurize')
-def advanced_home_features(cian_dataframe:pd.DataFrame) -> pd.Series:
+def advanced_home_features(cian_df:pd.DataFrame) -> pd.Series:
     result_list = {}
-    home_adress_df = cian_dataframe.loc[:,['Город','Округ','Улица','Дом']].fillna('')
+    home_adress_df = cian_df.loc[:,['Город','Округ','Улица','Дом']].fillna('')
     for idx in tqdm(home_adress_df.index,total=home_adress_df.shape[0]):
         result_list[idx] = get_advanced_home_data(home_adress_df.fillna('').loc[idx].to_dict())
 
@@ -180,7 +179,7 @@ def advanced_home_features(cian_dataframe:pd.DataFrame) -> pd.Series:
        description='Дополнение данных простыми фичами',
        group_name='Featurize')
 def featuring_cian_data(
-                        cian_dataframe:pd.DataFrame,
+                        cian_df:pd.DataFrame,
                         title_features:pd.DataFrame,
                         geo_features:pd.DataFrame,
                         text_features:pd.DataFrame,
@@ -188,9 +187,9 @@ def featuring_cian_data(
                         )->pd.DataFrame:
 
     
-    cian_dataframe.drop(['title'],axis=1,inplace=True)
+    cian_df.drop(['title'],axis=1,inplace=True)
     
-    result = cian_dataframe.join(title_features)\
+    result = cian_df.join(title_features)\
                             .join(geo_features)\
                             .join(text_features)\
                             .join(advanced_home_features)
