@@ -25,14 +25,14 @@ parse_job = define_asset_job(name='update_data',
                             config=parse_config,
                             selection=parse_assets,
                             partitions_def=partitions,
-                            tags={"dagster/max_retries": 1, 
+                            tags={"dagster/max_retries": 3, 
                                 "dagster/retry_strategy": "FROM FAILURE"}
                                 )
 
 featurize_job = define_asset_job(name='featurize_data',
                             selection=featurize_assets,
-                            config=config,
-                            tags={"dagster/max_retries": 1, 
+                            config=feature_config,
+                            tags={"dagster/max_retries": 3, 
                                 "dagster/retry_strategy": "FROM FAILURE"}
                                 )
 
