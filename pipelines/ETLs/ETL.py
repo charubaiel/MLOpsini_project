@@ -2,7 +2,7 @@
 from dagster import define_asset_job,schedule,sensor,load_assets_from_modules
 from dagster import Definitions,DefaultSensorStatus,DefaultScheduleStatus,RunRequest
 from ETLs.ops import parse,featurize
-from ETLs.ops.parse import partitions
+from ETLs.ops.parse import partitions,partition_keys
 from utils.connections import db_resource,parser_resource,s3_resource
 import yaml
 import numpy as np
@@ -48,22 +48,11 @@ def parsing_schedule():
     run_config = config.copy()
     run_config['ops']['page_list']['config']['fetch_pages'] = 1
     if np.random.beta(1,1) >= .5:
-        return RunRequest(
-            run_config=run_config,
-            partition_key=partitions
+        for partition in partition_keys:
+            yield RunRequest(
+            run_key=partition,
+            partition_key=partition
             )
-    return {}
-
-# @sensor(
-#     job=parse_job,
-#     minimum_interval_seconds=60*60,
-#     default_status=DefaultSensorStatus.RUNNING
-# )
-# def random_parse_start():
-#     run_config = config.copy()
-#     run_config['ops']['page_list']['config']['fetch_pages'] = 1
-#     if np.random.beta(1,1) >= .5:
-#         return RunRequest(run_config=run_config)
 
 @sensor(
     job=featurize_job,

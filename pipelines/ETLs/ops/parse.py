@@ -3,7 +3,6 @@ import numpy as np
 import time
 from io import BytesIO
 import hashlib
-import pandas as pd
 
 partition_keys = ['room1','room2','room3']
 partitions = StaticPartitionsDefinition(partition_keys)

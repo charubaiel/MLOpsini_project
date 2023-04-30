@@ -60,7 +60,7 @@ def convert_html_2_df_cian(context,unprocessed_filenames) -> pd.DataFrame:
     result = pd.DataFrame(result_list)
     
     result ['Дом'] = result['Дом'].fillna('').apply(lambda x: re.sub('(?!:\d)(К)',' корпус ',x))
-
+    result = result.astype({'price':float})
     return result
 
 
@@ -74,18 +74,18 @@ def pass_new_data(context,cian_raw_df:pd.DataFrame) -> pd.DataFrame:
     db = context.resources.db_resource
     cian_df = cian_raw_df
     try:
-        uniq_results = db.connection.execute('select distinct url,price from intel.cian').df()
+        history_data = db.connection.execute('select distinct url,price from intel.cian').df()
     except Exception as e:
         context.log.warning(f'MESSAGE : {e}\n\nNew table creation')
         db.connection.execute('create schema if not exists intel')
     check_new = set(cian_raw_df[['url','price']].apply(tuple,axis=1))
-    check_old = set(uniq_results[['url','price']].apply(tuple,axis=1))
+    check_old = set(history_data[['url','price']].apply(tuple,axis=1))
     diff_ = check_old - check_new
-    if len(diff_) >0:
-        new_urls_filter = [url[0] for url in diff_]
-        cian_df = cian_raw_df.query('url.isin(@new_urls_filter)')
-    else:
-        raise ValueError('No New Updates to load')
+    assert len(diff_) >0, 'No New Updates to load'
+    
+    new_urls_filter = [url[0] for url in diff_]
+    cian_df = cian_raw_df.query('url.isin(@new_urls_filter)')
+
         
     return cian_df
 
