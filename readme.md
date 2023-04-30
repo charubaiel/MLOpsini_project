@@ -63,6 +63,6 @@
 poetry install
 poetry shell
 
-dagster dev
+cd pipelines && bash start.sh
 
 ```

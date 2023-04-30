@@ -39,7 +39,7 @@ featurize_job = define_asset_job(name='featurize_data',
 
 
 @schedule(
-    cron_schedule="*/44 10-22 * * *",
+    cron_schedule="*/44 9-22 * * *",
     job=parse_job,
     default_status=DefaultScheduleStatus.RUNNING,
     execution_timezone="Europe/Moscow",
@@ -48,7 +48,10 @@ def parsing_schedule():
     run_config = config.copy()
     run_config['ops']['page_list']['config']['fetch_pages'] = 1
     if np.random.beta(1,1) >= .5:
-        return RunRequest(run_config=run_config)
+        return RunRequest(
+            run_config=run_config,
+            partition_key=partitions
+            )
     return {}
 
 # @sensor(
