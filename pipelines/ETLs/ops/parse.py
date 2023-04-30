@@ -1,4 +1,4 @@
-from dagster import asset,StaticPartitionsDefinition,FreshnessPolicy
+from dagster import asset,StaticPartitionsDefinition
 import numpy as np 
 import time
 from io import BytesIO

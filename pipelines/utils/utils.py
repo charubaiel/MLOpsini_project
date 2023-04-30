@@ -9,14 +9,17 @@ from geopy.extra.rate_limiter import RateLimiter
 from difflib import SequenceMatcher
 import requests
 import time
+from tqdm import tqdm 
+tqdm.pandas()
 
+RATE_REQUEST_LIMIT=1.44
 SLEEP_SECONDS = 5
 BASE_SEARCH_URL = 'https://dom.mingkh.ru/search?searchtype=house&address='
 BASE_URL = 'https://dom.mingkh.ru'
 
 
-geolocator = Nominatim(user_agent="geo_features")
-geocode = RateLimiter(geolocator.geocode, min_delay_seconds=2,max_retries=2)
+geolocator = Nominatim(user_agent="geo_features_cian")
+geocode = RateLimiter(geolocator.geocode, min_delay_seconds=RATE_REQUEST_LIMIT,max_retries=2)
 
 warnings.simplefilter('ignore')
 
@@ -106,8 +109,8 @@ def get_geo_features(adresses:pd.Series) -> pd.DataFrame:
     
     result = {}
     _center = geocode('Москва Красная площадь').point
-    indexes = adresses.progress_apply(geocode)
-    postcode = indexes.apply(lambda x: re.findall('\d{5,}',x.address)[0] if x is not None else x)
+    indexes = adresses.apply(geocode)
+    postcode = indexes.apply(lambda x: re.findall('\d{5,}',x.address) if x is not None else x)
     latitude = indexes.apply(lambda x: x.latitude if x is not None else x)
     longtitude = indexes.apply(lambda x: x.longitude if x is not None else x)
     centreness = indexes.apply(lambda x: distance.distance(x.point,_center).km if x is not None else x)
@@ -165,7 +168,7 @@ def get_title_features(title_series:pd.Series) -> pd.DataFrame:
     return pd.DataFrame(result)
 
 
-@retry
+@retry()
 def search_home_url(adress_dict:dict) -> str:
 
     home_query = ' '.join(adress_dict.values()).replace(' ','+')
@@ -186,9 +189,9 @@ def search_home_url(adress_dict:dict) -> str:
     return result
 
 
-@retry
+@retry()
 def parse_home_page(url: str) -> pd.Series:
-    
+    time.sleep(RATE_REQUEST_LIMIT)
     full_url = BASE_URL + url
     _id = url.split('/')[-1]
     df_list = pd.read_html(full_url)
@@ -212,6 +215,7 @@ def get_advanced_home_data(name_series:pd.Series) -> dict:
 
     url_ = search_home_url(name_series)
     result = parse_home_page(url_)
+
     return result.to_dict()
 
 def get_advanced_home_features(home_adress_df:pd.DataFrame) -> pd.DataFrame:

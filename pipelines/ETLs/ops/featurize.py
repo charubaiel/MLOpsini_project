@@ -3,9 +3,10 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import re
 from utils.utils import (get_cian_item_info,
-                        distance,geocode,
+                        distance,geocode,tqdm,
                         get_advanced_home_data
                         )
+
 
 
 
@@ -139,7 +140,7 @@ def title_features(cian_dataframe:pd.DataFrame) -> pd.DataFrame:
 def advanced_home_features(cian_dataframe:pd.DataFrame) -> pd.DataFrame:
     result_list = {}
     home_adress_df = cian_dataframe.loc[:,['Город','Округ','Улица','Дом']].fillna('')
-    for idx in home_adress_df.index:
+    for idx in tqdm(home_adress_df.index,total=home_adress_df.shape[0]):
         result_list[idx] = get_advanced_home_data(home_adress_df.fillna('').loc[idx].to_dict())
 
     return pd.DataFrame(result_list).T
