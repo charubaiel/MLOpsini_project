@@ -8,16 +8,41 @@ from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 from difflib import SequenceMatcher
 import requests
+import time
 
+SLEEP_SECONDS = 5
 BASE_SEARCH_URL = 'https://dom.mingkh.ru/search?searchtype=house&address='
 BASE_URL = 'https://dom.mingkh.ru'
 
 
 geolocator = Nominatim(user_agent="geo_features")
-geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1.44)
+geocode = RateLimiter(geolocator.geocode, min_delay_seconds=2,max_retries=2)
 
 warnings.simplefilter('ignore')
 
+
+
+def retry(times:int=2, sleep_timeout:float = SLEEP_SECONDS):
+    """
+    Retry Decorator
+    
+    """
+    def decorator(func):
+        def newfn(*args, **kwargs):
+            attempt = 0
+            while attempt < times:
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    print(
+                        'Exception thrown when attempting to run %s, attempt '
+                        '%d of %d' % (func, attempt, times)
+                    )
+                    time.sleep(sleep_timeout)
+                    attempt += 1
+            return func(*args, **kwargs)
+        return newfn
+    return decorator
 
 def get_avito_item_info(item:BeautifulSoup):
     item_desc = {}
@@ -139,7 +164,9 @@ def get_title_features(title_series:pd.Series) -> pd.DataFrame:
 
     return pd.DataFrame(result)
 
-def search_home_url(adress_dict:dict):
+
+@retry
+def search_home_url(adress_dict:dict) -> str:
 
     home_query = ' '.join(adress_dict.values()).replace(' ','+')
     adress = adress_dict['Улица'] + ', ' + adress_dict['Дом']
@@ -148,8 +175,8 @@ def search_home_url(adress_dict:dict):
     request_home_query = requests.utils.quote(home_query)
     request_url = BASE_SEARCH_URL + request_home_query
 
-
     search_table = pd.read_html(request_url,extract_links='body')[0]
+
     search_table[['Адрес','home_url']] = search_table['Адрес'].apply('|'.join).str.split('|',expand=True)
     search_table['match'] = search_table['Адрес'].apply(lambda x: SequenceMatcher(None,x,adress).ratio())
 
@@ -158,7 +185,10 @@ def search_home_url(adress_dict:dict):
 
     return result
 
-def parse_home_page(url: str):
+
+@retry
+def parse_home_page(url: str) -> pd.Series:
+    
     full_url = BASE_URL + url
     _id = url.split('/')[-1]
     df_list = pd.read_html(full_url)
@@ -178,12 +208,13 @@ def parse_home_page(url: str):
 
 
 
-def get_advanced_home_data(name_series:pd.Series):
+def get_advanced_home_data(name_series:pd.Series) -> dict:
+
     url_ = search_home_url(name_series)
     result = parse_home_page(url_)
     return result.to_dict()
 
-def get_advanced_home_features(home_adress_df):
+def get_advanced_home_features(home_adress_df:pd.DataFrame) -> pd.DataFrame:
     result_list = {}
     for idx in home_adress_df.index:
         result_list[idx] = get_advanced_home_data(home_adress_df.fillna('').loc[idx].to_dict())
