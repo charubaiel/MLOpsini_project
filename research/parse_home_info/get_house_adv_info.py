@@ -7,9 +7,9 @@ BASE_URL = 'https://dom.mingkh.ru'
 BASE_FILEPATH = 'base_home_data.csv'
 
 
-def parse_home_page(home_url: str):
-    full_url = BASE_URL + home_url
-    _id = home_url.split('/')[-1]
+def parse_home_page(url: str):
+    full_url = BASE_URL + url
+    _id = url.split('/')[-1]
     df_list = pd.read_html(full_url)
     home_data = pd.concat(df_list)\
         .iloc[:, :3]\
@@ -19,7 +19,7 @@ def parse_home_page(home_url: str):
         .iloc[:, 1]\
         .rename(_id)\
         .rename_axis('id')
-    return home_data
+    return home_data.to_frame().T.assign(url=url)
 
 
 
@@ -36,17 +36,17 @@ def chunk_save(urls_to_load:list):
 
 
 
-# def get_items_to_load(base_file: str, loaded_file: str):
+def get_items_to_load(base_file: str, loaded_file: str):
 
-#     base_data = pd.read_csv(base_file)
-#     urls_to_load = set(base_data['home_url'].where(
-#         lambda x: x != 'home_url').dropna().drop_duplicates().tolist())
+    base_data = pd.read_csv(base_file)
+    urls_to_load = set(base_data['home_url'].where(
+        lambda x: x != 'home_url').dropna().drop_duplicates().tolist())
     
-#     try:
-#         loaded_items = set(pd.concat([pd.read_parquet(i) for i in pathlib.Path(f'{ROOT}/home_parquet_data').glob('*')])['id'])
-#         urls_to_load = list(urls_to_load - loaded_homes)
-#         print(f'items to load : {len(urls_to_load)}')
-#     return urls_to_load
+    try:
+        loaded_items = set(pd.concat([pd.read_parquet(i) for i in pathlib.Path(f'{ROOT}/home_parquet_data/').glob('*')])['url'])
+        urls_to_load = list(urls_to_load - loaded_homes)
+        print(f'items to load : {len(urls_to_load)}')
+    return urls_to_load
 
 
 if __name__ == "__main__":

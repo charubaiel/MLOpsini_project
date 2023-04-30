@@ -1,12 +1,21 @@
 
 import warnings
-import geopy
 import re
 import pandas as pd
 from bs4 import BeautifulSoup
 from geopy import distance
+from geopy.geocoders import Nominatim
+from geopy.extra.rate_limiter import RateLimiter
+from difflib import SequenceMatcher
+import requests
 
-gp = geopy.Nominatim(user_agent='geo_features',timeout=1.44)
+BASE_SEARCH_URL = 'https://dom.mingkh.ru/search?searchtype=house&address='
+BASE_URL = 'https://dom.mingkh.ru'
+
+
+geolocator = Nominatim(user_agent="geo_features")
+geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1.44)
+
 warnings.simplefilter('ignore')
 
 
@@ -26,7 +35,7 @@ def get_avito_item_info(item:BeautifulSoup):
             item_desc['JK'] = ''
         item_desc['adress'] = item.find('div',{'data-marker':'item-address'}).span.text
         item_desc['metro_dist'] = item.find('span',{'class':'geo-periodSection-bQIE4'}).text
-        item_desc['metro'] = item.find('div',{'class':'geo-georeferences-SEtee text-text-LurtD text-size-s-BxGpL'}).text.replace(item_desc['metro_dist'],'')
+        item_desc['metro'] = item.find('div',{'class':'geo-georeferences-SEtee text-text-LurtD text-size-s-BxgeocodeL'}).text.replace(item_desc['metro_dist'],'')
         item_desc['metro_branch'] = item.find('i',{'class':'geo-icon-Cr9YM'})['style'].replace('background-color:','')
     except:
         pass
@@ -71,9 +80,8 @@ def checksum_items(page:str) -> list:
 def get_geo_features(adresses:pd.Series) -> pd.DataFrame:
     
     result = {}
-
-    _center = gp.geocode('Москва Красная площадь').point
-    indexes = adresses.progress_apply(gp.geocode)
+    _center = geocode('Москва Красная площадь').point
+    indexes = adresses.progress_apply(geocode)
     postcode = indexes.apply(lambda x: re.findall('\d{5,}',x.address)[0] if x is not None else x)
     latitude = indexes.apply(lambda x: x.latitude if x is not None else x)
     longtitude = indexes.apply(lambda x: x.longitude if x is not None else x)
@@ -130,3 +138,54 @@ def get_title_features(title_series:pd.Series) -> pd.DataFrame:
     )
 
     return pd.DataFrame(result)
+
+def search_home_url(adress_dict:dict):
+
+    home_query = ' '.join(adress_dict.values()).replace(' ','+')
+    adress = adress_dict['Улица'] + ', ' + adress_dict['Дом']
+
+
+    request_home_query = requests.utils.quote(home_query)
+    request_url = BASE_SEARCH_URL + request_home_query
+
+
+    search_table = pd.read_html(request_url,extract_links='body')[0]
+    search_table[['Адрес','home_url']] = search_table['Адрес'].apply('|'.join).str.split('|',expand=True)
+    search_table['match'] = search_table['Адрес'].apply(lambda x: SequenceMatcher(None,x,adress).ratio())
+
+    
+    result = search_table.set_index('home_url')['match'].idxmax()
+
+    return result
+
+def parse_home_page(url: str):
+    full_url = BASE_URL + url
+    _id = url.split('/')[-1]
+    df_list = pd.read_html(full_url)
+    home_data = pd.concat(df_list)\
+        .iloc[:, :3]\
+        .dropna(thresh=1)\
+        .set_index(0)\
+        .fillna(method='ffill', axis=1)\
+        .iloc[:, 1]\
+        .rename(_id)\
+        .rename_axis('id')
+    
+    result = home_data.reset_index().drop_duplicates().pipe(
+        lambda x: x.loc[x.iloc[:,0]!=x.iloc[:,1]]
+    ).set_index('id')
+    return result.T.assign(url=url).T.iloc[:,0]
+
+
+
+def get_advanced_home_data(name_series:pd.Series):
+    url_ = search_home_url(name_series)
+    result = parse_home_page(url_)
+    return result.to_dict()
+
+def get_advanced_home_features(home_adress_df):
+    result_list = {}
+    for idx in home_adress_df.index:
+        result_list[idx] = get_advanced_home_data(home_adress_df.fillna('').loc[idx].to_dict())
+
+    return pd.DataFrame(result_list).T

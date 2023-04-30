@@ -1,4 +1,4 @@
-from dagster import asset,StaticPartitionsDefinition
+from dagster import asset,StaticPartitionsDefinition,FreshnessPolicy
 import numpy as np 
 import time
 from io import BytesIO
@@ -82,8 +82,9 @@ def save_data_db(context,page_list:list) -> None:
 def save_data_s3(context,page_list:list) -> None:
     
     s3 = context.resources.s3_resource
+    partition = context.asset_partition_key_for_output()
     for page in page_list:
-        name = hashlib.md5(page.read()).hexdigest()
+        name = hashlib.md5(page.read()).hexdigest()+f'_{partition}.html'
         file = page
         s3.save_file(bucket='raw',name=name,file=file)
  

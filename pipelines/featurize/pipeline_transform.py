@@ -1,5 +1,6 @@
 
-from dagster import Definitions,define_asset_job,sensor,load_assets_from_modules,RunRequest
+from dagster import Definitions,DefaultSensorStatus,RunRequest
+from dagster import define_asset_job,sensor,load_assets_from_modules
 from featurize.ops import cian
 from utils.connections import db_resource,parser_resource,s3_resource
 from pathlib import Path
@@ -24,7 +25,8 @@ featurize_job = define_asset_job(name='featurize_data',
 
 @sensor(
     job=featurize_job,
-    minimum_interval_seconds=30,
+    minimum_interval_seconds=5,
+    default_status=DefaultSensorStatus.RUNNING
 )
 def check_updates():
     has_new_data = len([i for i in Path(f'{ROOT.parent.parent}/data/raw').glob('*')])
