@@ -57,6 +57,7 @@ def parsing_schedule():
         for partition in partition_keys:
             yield RunRequest(
             run_key=partition,
+            run_config=run_config,
             partition_key=partition
             )
 
