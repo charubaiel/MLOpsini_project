@@ -1,18 +1,20 @@
-import pandas as pd
 import time
-from tqdm import tqdm
+
 import numpy as np
-
-
+import pandas as pd
+from tqdm import tqdm
 
 base_url = 'https://dom.mingkh.ru'
 
-
-for page in tqdm(range(1,328)):
+for page in tqdm(range(1, 328)):
     time.sleep(np.random.poisson(5))
-    page_table = pd.read_html(f'https://dom.mingkh.ru/moskva/moskva/houses?page={page}',extract_links='body')[0]
-    page_table[['Адрес','home_url']] = page_table['Адрес'].apply('|'.join).str.split('|',expand=True)
-    page_table.assign(page=page).to_csv('base_home_data.csv',mode='a')
+    page_table = pd.read_html(
+        f'https://dom.mingkh.ru/moskva/moskva/houses?page={page}',
+        extract_links='body')[0]
+    page_table[['Адрес', 'home_url'
+                ]] = page_table['Адрес'].apply('|'.join).str.split('|',
+                                                                   expand=True)
+    page_table.assign(page=page).to_csv('base_home_data.csv', mode='a')
 
 dd = pd.read_csv('data/base_home_data.csv')
 
@@ -28,6 +30,7 @@ def parse_home_page(home_url):
                     .rename(_id).rename_axis('id')
     return home_data.to_frame().T
 
+
 # home_list = dd['home_url'].where(lambda x: x!='home_url').dropna().drop_duplicates()
 # result_list = []
 
@@ -38,7 +41,7 @@ def parse_home_page(home_url):
 #         result_list = []
 
 # async def get_url(session,url):
-#     full_url = base_url + url       
+#     full_url = base_url + url
 #     response = await session.get(full_url)
 
 #     if response.status_code == 200:
