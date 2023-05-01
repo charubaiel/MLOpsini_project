@@ -3,7 +3,7 @@ from dagster import define_asset_job,schedule,sensor,load_assets_from_modules
 from dagster import Definitions,DefaultSensorStatus,DefaultScheduleStatus,RunRequest
 from ETLs.ops import parse,featurize
 from ETLs.ops.parse import partitions,partition_keys
-from utils.configs import S3Connection,DatabaseResource,ParserResource
+from utils.configs import S3Resource,DatabaseResource,ParserResource
 import yaml
 import numpy as np
 from pathlib import Path
@@ -39,7 +39,6 @@ parse_job = define_asset_job(name='update_data',
 
 featurize_job = define_asset_job(name='featurize_data',
                             selection=featurize_assets,
-                            # config=feature_config,
                             tags={"dagster/max_retries": 3, 
                                 "dagster/retry_strategy": "FROM FAILURE"}
                                 )
@@ -63,7 +62,7 @@ def parsing_schedule():
 
 @sensor(
     job=featurize_job,
-    minimum_interval_seconds=60*60,
+    minimum_interval_seconds=60*30,
     default_status=DefaultSensorStatus.RUNNING
 )
 def check_updates():
@@ -82,7 +81,7 @@ defs = Definitions(
     resources={
             "db": DatabaseResource(connection_path='../data/protodb.db'),
             'parser':ParserResource(),
-            's3':S3Connection(),
+            's3':S3Resource(),
                }
 )
 

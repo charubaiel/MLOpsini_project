@@ -3,7 +3,7 @@ import numpy as np
 import time
 from io import BytesIO
 import hashlib
-from utils.configs import S3Connection,ParserResource
+from utils.configs import S3Resource,ParserResource
 
 
 partition_keys = ['room1','room2','room3']
@@ -20,9 +20,11 @@ def fetch_cian(context,parser:ParserResource) -> list:
 
     client = parser.get_client()
     partition = context.asset_partition_key_for_output()
+
     url_params = '&'.join([f'{k}={v}' for k,v in context.op_config['params'].items()])
     url = context.op_config['start_url'] + url_params
     url = url.replace('room1',f'{partition}')
+    
     context.log.warning(url)
     client.get('https://google.com')
     client.get('https://ya.ru')
@@ -55,7 +57,7 @@ def fetch_cian(context,parser:ParserResource) -> list:
     compute_kind='S3',
     partitions_def=partitions,
     )
-def save_data_s3(context,s3:S3Connection,page_list:list) -> None:
+def save_data_s3(context,s3:S3Resource,page_list:list) -> None:
     
     # s3 = context.resources.s3
     partition = context.asset_partition_key_for_output()

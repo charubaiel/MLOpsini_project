@@ -2,7 +2,7 @@ from dagster import asset
 import pandas as pd
 from bs4 import BeautifulSoup
 import re
-from utils.configs import S3Connection,DatabaseResource
+from utils.configs import S3Resource,DatabaseResource
 from utils.utils import (get_cian_item_info,
                         distance,tqdm,geocode,
                         get_advanced_home_data
@@ -19,9 +19,9 @@ from utils.utils import (get_cian_item_info,
        compute_kind='s3',
        description='Сбор данных',
        group_name='Extract')
-def get_raw_data(context,s3:S3Connection) -> list:
-
-    page_list= s3.get_filenames('raw')
+def get_raw_data(context,s3:S3Resource) -> list:
+    client = s3.get_client()
+    page_list= client.get_filenames('raw')
     
     return page_list
 
@@ -33,10 +33,11 @@ def get_raw_data(context,s3:S3Connection) -> list:
        compute_kind='bs4',
        description='Парсинг итемов странички',
        group_name='Extract')
-def convert_html_2_df_cian(context,s3:S3Connection,unprocessed_filenames:list) -> pd.DataFrame:
+def convert_html_2_df_cian(context,s3:S3Resource,unprocessed_filenames:list) -> pd.DataFrame:
 
+    client = s3.get_client()
     result_list = []
-    page_list= [s3.get_data(name) for name in unprocessed_filenames]
+    page_list= [client.get_data(name) for name in unprocessed_filenames]
     assert len(page_list)>0, 'No Files Found'
     
     for page in page_list:
@@ -56,6 +57,7 @@ def convert_html_2_df_cian(context,s3:S3Connection,unprocessed_filenames:list) -
     
     result ['Дом'] = result['Дом'].fillna('').apply(lambda x: re.sub('(?!:\d)(К)',' корпус ',x))
     result = result.astype({'price':float})
+
     return result
 
 
@@ -220,9 +222,9 @@ def save_data_cian(context,db:DatabaseResource,featurized_cian_data:pd.DataFrame
        compute_kind='s3',
        description='удаление хлама данных',
        group_name='Clean')
-def remove_used_data(context,s3:S3Connection,unprocessed_filenames:list,save_cian_data:str) -> None:
+def remove_used_data(context,s3:S3Resource,unprocessed_filenames:list,save_cian_data:str) -> None:
     if save_cian_data == 'ok':
-
-        [s3.remove_data(file) for file in unprocessed_filenames]
+        client = s3.get_client()
+        [client.remove_data(file) for file in unprocessed_filenames]
     
 

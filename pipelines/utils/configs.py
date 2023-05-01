@@ -7,8 +7,8 @@ from pathlib import Path
 from io import BytesIO
 ROOT = Path(__file__).parent
 
-
-class DatabaseConnection(ConfigurableResource):
+@dataclass
+class DatabaseConnection:
     connection_path: str 
     
     def __post_init__(self):
@@ -30,13 +30,10 @@ class DatabaseConnection(ConfigurableResource):
         
 
 
+@dataclass
+class LocalDirConnection:
 
-class S3Connection(ConfigurableResource):
-
-    path: str = f'{ROOT.parent.parent}/data'
-
-    def __post_init__(self):
-        self.s3 = 'future_bucket'
+    path:str = f'{ROOT.parent.parent}/data'
 
     def save_file(self,
                     bucket:str,
@@ -51,8 +48,6 @@ class S3Connection(ConfigurableResource):
             file.seek(0)
             f.write(file.read())
 
-
-    
     def get_filenames(self,
                         bucket:str) -> list:
         
@@ -72,7 +67,6 @@ class S3Connection(ConfigurableResource):
     def remove_data(self,
                 filename:str) -> None:
         Path(filename).unlink()
-
 
 
 
@@ -116,33 +110,9 @@ class DatabaseResource(ConfigurableResource):
         return DatabaseConnection(self.connection_path)
     
 
+class S3Resource(ConfigurableResource):
 
+    path: str = f'{ROOT.parent.parent}/data'
 
-# @resource(config_schema={"connection": str})
-# @contextmanager
-# def db_resource(init_context):
-#     try:
-#         connection = init_context.resource_config["connection"]
-#         db_conn = DatabaseConnection(connection)
-#         yield db_conn
-#     finally :
-#         db_conn.close()
-
-
-
-# @resource(config_schema={"auth": str})
-# def s3_resource(init_context):
-
-#     auth = init_context.resource_config["auth"]
-#     s3_conn = S3Connection()
-#     yield s3_conn
-
-
-# @resource()
-# def parser_resource(init_context):
-#     driver = SimpleParser()
-#     try:
-#         yield driver
-#     finally :
-#         driver.close()
-
+    def get_client(self):
+        return LocalDirConnection(self.path)
