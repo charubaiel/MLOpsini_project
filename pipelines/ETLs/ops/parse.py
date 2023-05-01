@@ -24,7 +24,7 @@ def fetch_cian(context,parser:ParserResource) -> list:
     url_params = '&'.join([f'{k}={v}' for k,v in context.op_config['params'].items()])
     url = context.op_config['start_url'] + url_params
     url = url.replace('room1',f'{partition}')
-    
+
     context.log.warning(url)
     client.get('https://google.com')
     client.get('https://ya.ru')
@@ -59,9 +59,9 @@ def fetch_cian(context,parser:ParserResource) -> list:
     )
 def save_data_s3(context,s3:S3Resource,page_list:list) -> None:
     
-    # s3 = context.resources.s3
+    client = s3.get_client()
     partition = context.asset_partition_key_for_output()
     for page in page_list:
         name = hashlib.md5(page.read()).hexdigest()+f'_{partition}.html'
         file = page
-        s3.save_file(bucket='raw',name=name,file=file)
+        client.save_file(bucket='raw',name=name,file=file)
