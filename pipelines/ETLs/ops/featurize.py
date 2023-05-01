@@ -73,14 +73,17 @@ def pass_new_data(context,cian_raw_df:pd.DataFrame) -> pd.DataFrame:
 
     db = context.resources.db_resource
     cian_df = cian_raw_df
+    check_new = set(cian_raw_df[['url','price']].apply(tuple,axis=1))
+
     try:
         history_data = db.connection.execute('select distinct url,price from intel.cian').df()
+        check_old = set(history_data[['url','price']].apply(tuple,axis=1))
     except Exception as e:
         context.log.warning(f'MESSAGE : {e}\n\nNew table creation')
         db.connection.execute('create schema if not exists intel')
-    check_new = set(cian_raw_df[['url','price']].apply(tuple,axis=1))
-    check_old = set(history_data[['url','price']].apply(tuple,axis=1))
-    diff_ = check_old - check_new
+        check_old = set([])
+
+    diff_ = check_new - check_old
     assert len(diff_) >0, 'No New Updates to load'
     
     new_urls_filter = [url[0] for url in diff_]
