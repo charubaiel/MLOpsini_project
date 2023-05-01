@@ -185,8 +185,11 @@ def parse_home_page(url: str) -> pd.Series:
 
 
 def get_advanced_home_data(name_series: pd.Series) -> dict:
+    try:
+        url_ = search_home_url(name_series)
+        result = parse_home_page(url_)
+        return result.to_dict()
+    except Exception as e: 
+        return {'Год_ввода_в_эксплуатацию':-1}
 
-    url_ = search_home_url(name_series)
-    result = parse_home_page(url_)
 
-    return result.to_dict()
