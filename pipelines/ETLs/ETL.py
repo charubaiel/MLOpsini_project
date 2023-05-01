@@ -15,8 +15,6 @@ with open(f'{ROOT}/config.yml') as buffer:
     config = yaml.safe_load(buffer)
     
     parse_config = config.copy()
-    # feature_config = config.copy()
-    # del feature_config['ops']
 
 
 
