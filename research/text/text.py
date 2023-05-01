@@ -5,8 +5,8 @@ import requests
 from navec import Navec
 from scipy.spatial.distance import cosine
 
-ROOT = pathlib.Path(__file__).parent.parent.parent
-VECTOR_FILEPATH = f'{ROOT}/utils/navec_500k.tar'
+ROOT = pathlib.Path(__file__).parent
+VECTOR_FILEPATH = f'{ROOT}/navec_500k.tar'
 
 if ~pathlib.Path(VECTOR_FILEPATH).exists():
 
