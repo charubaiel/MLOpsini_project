@@ -1,16 +1,14 @@
 import duckdb
 import pandas as pd
-from dataclasses import dataclass
-from dagster import resource
-from contextlib import contextmanager
+from dagster import ConfigurableResource
 import cloudscraper
+from dataclasses import dataclass
 from pathlib import Path
 from io import BytesIO
 ROOT = Path(__file__).parent
 
 
-@dataclass
-class DatabaseConnection:
+class DatabaseConnection(ConfigurableResource):
     connection_path: str 
     
     def __post_init__(self):
@@ -29,11 +27,11 @@ class DatabaseConnection:
             CREATE TABLE IF NOT EXISTS {table_name} as select * from df TABLESAMPLE 0;
             INSERT INTO {table_name}({",".join(df.columns)}) select * from df;
             ''')
+        
 
 
 
-@dataclass
-class S3Connection:
+class S3Connection(ConfigurableResource):
 
     path: str = f'{ROOT.parent.parent}/data'
 
@@ -78,9 +76,8 @@ class S3Connection:
 
 
 
-
 @dataclass
-class SimpleConnection:
+class SimpleParser:
 
     browser:str = 'chrome'
     platform:str = 'windows'
@@ -103,34 +100,49 @@ class SimpleConnection:
         self.parser.close()
 
 
+class ParserResource(ConfigurableResource):
+
+    browser:str = 'chrome'
+    platform:str = 'windows'
+    
+    def get_client(self):
+        return SimpleParser(self.browser, self.platform)
+
+class DatabaseResource(ConfigurableResource):
+
+    connection_path:str
+    
+    def get_client(self):
+        return DatabaseConnection(self.connection_path)
+    
 
 
 
-@resource(config_schema={"connection": str})
-@contextmanager
-def db_resource(init_context):
-    try:
-        connection = init_context.resource_config["connection"]
-        db_conn = DatabaseConnection(connection)
-        yield db_conn
-    finally :
-        db_conn.close()
+# @resource(config_schema={"connection": str})
+# @contextmanager
+# def db_resource(init_context):
+#     try:
+#         connection = init_context.resource_config["connection"]
+#         db_conn = DatabaseConnection(connection)
+#         yield db_conn
+#     finally :
+#         db_conn.close()
 
 
 
-@resource(config_schema={"auth": str})
-def s3_resource(init_context):
+# @resource(config_schema={"auth": str})
+# def s3_resource(init_context):
 
-    auth = init_context.resource_config["auth"]
-    s3_conn = S3Connection()
-    yield s3_conn
+#     auth = init_context.resource_config["auth"]
+#     s3_conn = S3Connection()
+#     yield s3_conn
 
 
-@resource()
-def parser_resource(init_context):
-    driver = SimpleConnection()
-    try:
-        yield driver
-    finally :
-        driver.close()
+# @resource()
+# def parser_resource(init_context):
+#     driver = SimpleParser()
+#     try:
+#         yield driver
+#     finally :
+#         driver.close()
 

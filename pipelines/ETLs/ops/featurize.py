@@ -2,12 +2,11 @@ from dagster import asset
 import pandas as pd
 from bs4 import BeautifulSoup
 import re
+from utils.configs import S3Connection,DatabaseResource
 from utils.utils import (get_cian_item_info,
-                        distance,geocode,tqdm,
+                        distance,tqdm,geocode,
                         get_advanced_home_data
                         )
-
-
 
 
     
@@ -19,11 +18,9 @@ from utils.utils import (get_cian_item_info,
 @asset(name = 'unprocessed_filenames',
        compute_kind='s3',
        description='Сбор данных',
-       required_resource_keys={"s3_resource"},
        group_name='Extract')
-def get_raw_data(context) -> list:
+def get_raw_data(context,s3:S3Connection) -> list:
 
-    s3 = context.resources.s3_resource
     page_list= s3.get_filenames('raw')
     
     return page_list
@@ -35,11 +32,9 @@ def get_raw_data(context) -> list:
 @asset(name = 'cian_raw_df',
        compute_kind='bs4',
        description='Парсинг итемов странички',
-       required_resource_keys={"s3_resource"},
        group_name='Extract')
-def convert_html_2_df_cian(context,unprocessed_filenames) -> pd.DataFrame:
+def convert_html_2_df_cian(context,s3:S3Connection,unprocessed_filenames:list) -> pd.DataFrame:
 
-    s3 = context.resources.s3_resource
     result_list = []
     page_list= [s3.get_data(name) for name in unprocessed_filenames]
     assert len(page_list)>0, 'No Files Found'
@@ -67,20 +62,19 @@ def convert_html_2_df_cian(context,unprocessed_filenames) -> pd.DataFrame:
 @asset(name = 'cian_df',
        compute_kind='bs4',
        description='Оставление уникальных значений',
-       required_resource_keys={"db_resource"},
        group_name='Extract')
-def pass_new_data(context,cian_raw_df:pd.DataFrame) -> pd.DataFrame:
+def pass_new_data(context,db:DatabaseResource,cian_raw_df:pd.DataFrame) -> pd.DataFrame:
 
-    db = context.resources.db_resource
     cian_df = cian_raw_df
+    client = db.get_client()
     check_new = set(cian_raw_df[['url','price']].apply(tuple,axis=1))
 
     try:
-        history_data = db.connection.execute('select distinct url,price from intel.cian').df()
+        history_data = client.connection.execute('select distinct url,price from intel.cian').df()
         check_old = set(history_data[['url','price']].apply(tuple,axis=1))
     except Exception as e:
         context.log.warning(f'MESSAGE : {e}\n\nNew table creation')
-        db.connection.execute('create schema if not exists intel')
+        client.connection.execute('create schema if not exists intel')
         check_old = set([])
 
     diff_ = check_new - check_old
@@ -213,12 +207,11 @@ def featuring_cian_data(
     name = 'save_cian_data',
     description='Сохранение обогащенных данных в базенку',
     group_name='Save',
-    compute_kind='SQL',
-    required_resource_keys={"db_resource"})
-def save_data_cian(context,featurized_cian_data:pd.DataFrame) -> str:
-
-    db = context.resources.db_resource
-    db.append_df(featurized_cian_data,'intel.cian')
+    compute_kind='SQL'
+    )
+def save_data_cian(context,db:DatabaseResource,featurized_cian_data:pd.DataFrame) -> str:
+    client = db.get_client()
+    client.append_df(featurized_cian_data,'intel.cian')
     return 'ok'
 
 
@@ -226,11 +219,10 @@ def save_data_cian(context,featurized_cian_data:pd.DataFrame) -> str:
 @asset(name = 'clear_processed_filenames',
        compute_kind='s3',
        description='удаление хлама данных',
-       required_resource_keys={"s3_resource"},
        group_name='Clean')
-def remove_used_data(context,unprocessed_filenames,save_cian_data) -> None:
+def remove_used_data(context,s3:S3Connection,unprocessed_filenames:list,save_cian_data:str) -> None:
     if save_cian_data == 'ok':
-        s3 = context.resources.s3_resource
+
         [s3.remove_data(file) for file in unprocessed_filenames]
     
 

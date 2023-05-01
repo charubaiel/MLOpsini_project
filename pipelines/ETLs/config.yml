@@ -1,10 +1,10 @@
 resources:
-  db_resource:
+  db:
     config:
-      connection: '../data/protodb.db'
-  s3_resource:
+      connection_path: '../data/protodb.db'
+  s3:
     config:
-      auth: 'some_login'
+      path: '../data'
 ops:
   page_list:
     config:

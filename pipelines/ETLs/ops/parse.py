@@ -3,6 +3,8 @@ import numpy as np
 import time
 from io import BytesIO
 import hashlib
+from utils.configs import S3Connection,ParserResource
+
 
 partition_keys = ['room1','room2','room3']
 partitions = StaticPartitionsDefinition(partition_keys)
@@ -13,23 +15,23 @@ partitions = StaticPartitionsDefinition(partition_keys)
     group_name='Download',
     compute_kind='HTML',
     partitions_def=partitions,
-    required_resource_keys={"parser_resource"})
-def fetch_cian(context) -> list:
+    )
+def fetch_cian(context,parser:ParserResource) -> list:
 
-    parser = context.resources.parser_resource
+    client = parser.get_client()
     partition = context.asset_partition_key_for_output()
-    params = '&'.join([f'{k}={v}' for k,v in context.op_config['params'].items()])
-    url = context.op_config['start_url'] + params
+    url_params = '&'.join([f'{k}={v}' for k,v in context.op_config['params'].items()])
+    url = context.op_config['start_url'] + url_params
     url = url.replace('room1',f'{partition}')
     context.log.warning(url)
-    parser.get('https://google.com')
-    parser.get('https://ya.ru')
-    parser.get('https://cian.ru')
+    client.get('https://google.com')
+    client.get('https://ya.ru')
+    client.get('https://cian.ru')
     page_list = []
     
     for page in range(1, context.op_config['fetch_pages']+1):
  
-        response = parser.get(url)
+        response = client.get(url)
         context.log.info(len(response))
         time.sleep(np.random.poisson(2))
 
@@ -52,11 +54,10 @@ def fetch_cian(context) -> list:
     group_name='Save',
     compute_kind='S3',
     partitions_def=partitions,
-    required_resource_keys={"s3_resource"}
     )
-def save_data_s3(context,page_list:list) -> None:
+def save_data_s3(context,s3:S3Connection,page_list:list) -> None:
     
-    s3 = context.resources.s3_resource
+    # s3 = context.resources.s3
     partition = context.asset_partition_key_for_output()
     for page in page_list:
         name = hashlib.md5(page.read()).hexdigest()+f'_{partition}.html'
