@@ -4,12 +4,6 @@ import pandas as pd
 
 
 
-    
-
-
-
-
-
 @asset(name = 'load_data',
        compute_kind='SQL',
        description='Сбор данных',

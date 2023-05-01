@@ -1,7 +1,7 @@
 
 from dagster import define_asset_job,schedule,sensor,load_assets_from_modules
 from dagster import Definitions,DefaultSensorStatus,RunRequest
-from update_models.ops import update
+from models.ops import mock_update
 import yaml
 from pathlib import Path
 
@@ -11,7 +11,7 @@ ROOT = Path(__file__).parent
 with open(f'{ROOT}/config.yml') as buffer:
     config = yaml.safe_load(buffer)
 
-model_assets = load_assets_from_modules([update])
+model_assets = load_assets_from_modules([mock_update])
 
 
 
@@ -44,15 +44,15 @@ def check_updates():
 
 
 
-# defs = Definitions(
-#     assets=model_update_job,
-#     jobs=[model_update_job],
-#     sensors=[check_updates],
-#     schedules=[parsing_schedule],
-#     resources={
-#             "db_resource": db_resource,
-#                'parser_resource':parser_resource,
-#                's3_resource':s3_resource,
-#                }
-# )
+defs = Definitions(
+    assets=model_update_job,
+    jobs=[model_update_job],
+    sensors=[check_updates],
+    schedules=[parsing_schedule],
+    resources={
+            "db_resource": db_resource,
+               'parser_resource':parser_resource,
+               's3_resource':s3_resource,
+               }
+)
 
