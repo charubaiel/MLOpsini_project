@@ -44,7 +44,7 @@ featurize_job = define_asset_job(name='featurize_data',
 
 
 @schedule(
-    cron_schedule="12/23 9-22 * * *",
+    cron_schedule="23 9-22/3 * * *",
     job=parse_job,
     default_status=DefaultScheduleStatus.RUNNING,
     execution_timezone="Europe/Moscow",
