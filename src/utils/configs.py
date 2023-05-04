@@ -78,6 +78,7 @@ class SimpleParser:
 
     def get(self, url):
         response = self.parser.get(url)
+        assert response.status_code == 200, f'Bad Response : {response.status_code}'
         self.html_data = response.text
         return self.html_data
 

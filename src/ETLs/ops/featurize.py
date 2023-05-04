@@ -147,10 +147,11 @@ def title_features(cian_df: pd.DataFrame) -> pd.DataFrame:
 
     title_series = cian_df['title'].str.lower().to_frame()
     title_series[['rooms', 'm2', 'floor']] = title_series['title'].str.replace(
-        ',(?=\d)', '.').str.split(',', expand=True)
+        ',(?=\d)', '.').str.split(',', expand=True).iloc[:,:3]
 
     title_series[['floor', 'max_floor']] = title_series['floor'].str.extract(
         '(\d+/\d+).*эт').iloc[:, 0].str.split('/', expand=True).astype(float)
+    
     title_series['m2'] = title_series['m2'].str.extract('(\d+).*м²').astype(
         float)
     title_series['is_max_floor'] = title_series['floor'] == title_series[

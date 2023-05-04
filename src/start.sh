@@ -13,7 +13,7 @@ run_coordinator:
 EOF
 
 fi
-DAGSTER_HOME=$PWD'/.DH' dagster dev
+DAGSTER_HOME=$PWD'/.DH' dagster dev -p 8111
 
 
 
