@@ -8,7 +8,7 @@ resources:
 ops:
   page_list:
     config:
-      fetch_pages: 3
+      fetch_pages: 10
       start_url: "https://www.cian.ru/cat.php?"
       params:
         deal_type: 'sale'
