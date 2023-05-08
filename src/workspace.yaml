@@ -1,3 +1,3 @@
 load_from:
   - python_file: ETLs/ETL.py
-  - python_file: models/update_model_pipeline.py
+  - python_file: ML/update_model_pipeline.py
