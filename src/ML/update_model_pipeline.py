@@ -1,7 +1,7 @@
 
 from dagster import define_asset_job,schedule,sensor,load_assets_from_modules
 from dagster import Definitions,DefaultSensorStatus,RunRequest
-from models.ops import update
+from ML.ops import update
 import yaml
 from pathlib import Path
 
