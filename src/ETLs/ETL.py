@@ -44,7 +44,7 @@ featurize_job = define_asset_job(name='featurize_data',
 
 
 @schedule(
-    cron_schedule="23 9-22/3 * * *",
+    cron_schedule="25 18 * * *",
     job=parse_job,
     default_status=DefaultScheduleStatus.RUNNING,
     execution_timezone="Europe/Moscow",
@@ -60,7 +60,7 @@ def parsing_schedule():
 
 
 @sensor(job=featurize_job,
-        minimum_interval_seconds=60 * 10,
+        minimum_interval_seconds=60 * 60,
         default_status=DefaultSensorStatus.RUNNING)
 def check_updates():
     has_new_data = len(
