@@ -2,8 +2,7 @@ from dagster import asset,graph_multi_asset,AssetOut,op,Out,Output
 import pandas as pd
 from sklearn import model_selection,metrics
 from catboost import CatBoostRegressor
-
-
+import joblib
 
 @asset(name = 'load_data',
        compute_kind='SQL',
@@ -160,6 +159,8 @@ def check_model_performanse(fit_model,test_data,test_target):
     metric_dict.update({'clipped_rmse':metrics.mean_squared_error(test_target.iloc[clipped_idx],yhat[clipped_idx])**.5})
     metric_dict.update({'clipped_mae':metrics.mean_absolute_error(test_target.iloc[clipped_idx],yhat[clipped_idx])})
     
+    joblib.dump(fit_model,'../models/catboost_v1.joblib')
+
     return Output(None,metadata=metric_dict)
 
 
