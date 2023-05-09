@@ -1,0 +1,30 @@
+image: python:3.8
+
+cache:
+  paths:
+    - ./cache/pip
+    
+stages:
+  - test
+  - build
+
+before_script:
+  - echo "start stage..."
+  - python --version
+
+lint-test-job-yapf:   
+  stage: test    
+  script:
+    - pip install yapf
+    - yapf -dr src/
+
+lint-test-job-ruff:   
+   stage: test    
+   script:
+     - pip install ruff
+     - ruff check src/
+
+build-docker-image:
+  stage: build
+  script:
+    - echo "build vse krasion"
