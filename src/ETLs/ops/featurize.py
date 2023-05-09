@@ -2,7 +2,7 @@ import re
 
 import pandas as pd
 from bs4 import BeautifulSoup
-from dagster import asset,Output
+from dagster import asset, Output
 from geopy import distance
 from tqdm import tqdm
 from utils.configs import DatabaseResource, S3Resource
@@ -81,7 +81,11 @@ def pass_new_data(context, db: DatabaseResource,
     new_urls_filter = [url[0] for url in diff_]
     cian_df = cian_raw_df.loc[cian_raw_df['url'].isin(new_urls_filter)]
 
-    return Output(cian_df, metadata={'files_parsed' : len(check_new), 'pct_new':len(new_urls_filter) / len(check_new)})
+    return Output(cian_df,
+                  metadata={
+                      'files_parsed': len(check_new),
+                      'pct_new': len(new_urls_filter) / len(check_new)
+                  })
 
 
 @asset(compute_kind='Python',
