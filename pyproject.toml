@@ -25,6 +25,8 @@ html5lib = "^1.1"
 ipykernel = "^6.22.0"
 catboost = "^1.2"
 shap = "^0.41.0"
+yapf = "^0.33.0"
+ruff = "^0.0.265"
 
 [tool.poetry.dev-dependencies]
 
