@@ -24,8 +24,7 @@ def get_raw_data(context, s3: S3Resource) -> list:
        compute_kind='bs4',
        description='Парсинг итемов странички',
        group_name='Extract')
-def convert_html_2_df_cian(context,
-                           s3: S3Resource,
+def convert_html_2_df_cian(context, s3: S3Resource,
                            unprocessed_filenames: list) -> pd.DataFrame:
 
     client = s3.get_client()
@@ -60,8 +59,7 @@ def convert_html_2_df_cian(context,
        compute_kind='bs4',
        description='Оставление уникальных значений',
        group_name='Extract')
-def pass_new_data(context,
-                  db: DatabaseResource,
+def pass_new_data(context, db: DatabaseResource,
                   cian_raw_df: pd.DataFrame) -> pd.DataFrame:
 
     cian_df = cian_raw_df
@@ -147,11 +145,11 @@ def title_features(cian_df: pd.DataFrame) -> pd.DataFrame:
 
     title_series = cian_df['title'].str.lower().to_frame()
     title_series[['rooms', 'm2', 'floor']] = title_series['title'].str.replace(
-        ',(?=\d)', '.').str.split(',', expand=True).iloc[:,:3]
+        ',(?=\d)', '.').str.split(',', expand=True).iloc[:, :3]
 
     title_series[['floor', 'max_floor']] = title_series['floor'].str.extract(
         '(\d+/\d+).*эт').iloc[:, 0].str.split('/', expand=True).astype(float)
-    
+
     title_series['m2'] = title_series['m2'].str.extract('(\d+).*м²').astype(
         float)
     title_series['is_max_floor'] = title_series['floor'] == title_series[
@@ -204,8 +202,7 @@ def featuring_cian_data(
        description='Сохранение обогащенных данных в базенку',
        group_name='Save',
        compute_kind='SQL')
-def save_data_cian(context,
-                   db: DatabaseResource,
+def save_data_cian(context, db: DatabaseResource,
                    featurized_cian_data: pd.DataFrame) -> str:
     client = db.get_client()
     client.append_df(featurized_cian_data, 'intel.cian')
@@ -216,9 +213,7 @@ def save_data_cian(context,
        compute_kind='s3',
        description='удаление хлама данных',
        group_name='Clean')
-def remove_used_data(context,
-                     s3: S3Resource,
-                     unprocessed_filenames: list,
+def remove_used_data(context, s3: S3Resource, unprocessed_filenames: list,
                      save_cian_data: str) -> None:
     if save_cian_data == 'ok':
         client = s3.get_client()

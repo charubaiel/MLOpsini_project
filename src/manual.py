@@ -21,8 +21,7 @@ def fetch_cian(partition: str):
     s3_client = s3.get_client()
     client = parser.get_client()
 
-    url_params = '&'.join(
-        [f'{k}={v}' for k, v in op_config['params'].items()])
+    url_params = '&'.join([f'{k}={v}' for k, v in op_config['params'].items()])
     url = op_config['start_url'] + url_params
     url = url.replace('room1', f'{partition}')
 

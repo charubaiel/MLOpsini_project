@@ -18,10 +18,8 @@ BASE_URL = 'https://dom.mingkh.ru'
 
 geolocator = Nominatim(
     timeout=10,
-    user_agent=
-    '''Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
-    (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'''
-)
+    user_agent='''Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
+    (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36''')
 geocode = RateLimiter(geolocator.geocode,
                       min_delay_seconds=RATE_REQUEST_LIMIT,
                       max_retries=2,
@@ -193,8 +191,6 @@ def get_advanced_home_data(name_series: pd.Series) -> dict:
         url_ = search_home_url(name_series)
         result = parse_home_page(url_)
         return result.to_dict()
-    except Exception as e: 
+    except Exception as e:
         print(e)
-        return {'Год_ввода_в_эксплуатацию':-1}
-
-
+        return {'Год_ввода_в_эксплуатацию': -1}
