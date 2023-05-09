@@ -14,16 +14,20 @@ except:
     pass
 
 
-@asset(name='load_data',
-       compute_kind='SQL',
-       description='Сбор данных',
-       #    required_resource_keys={"db_resource"},
-       group_name='Extract')
+@asset(
+    name='load_data',
+    compute_kind='SQL',
+    description='Сбор данных',
+    #    required_resource_keys={"db_resource"},
+    group_name='Extract')
 def get_data(context) -> pd.DataFrame:
 
     df = pd.read_parquet('../data/sample_data.parquet').dropna(subset='rubm2')
-    df = df.drop(['datetime', 'price', 'publish_delta', 'url', 'id', 'text', 'Город',
-                 'title', 'img_list', 'metro_branch', 'metro_name', 'metro_dist'], axis=1)
+    df = df.drop([
+        'datetime', 'price', 'publish_delta', 'url', 'id', 'text', 'Город',
+        'title', 'img_list', 'metro_branch', 'metro_name', 'metro_dist'
+    ],
+                 axis=1)
 
     return df
 
@@ -34,11 +38,11 @@ def get_data(context) -> pd.DataFrame:
        group_name='DataPrepare')
 def general_prepare(load_data):
     data = load_data.copy()
-    data['rooms'] = data['rooms'].where(lambda x: x.isin(
-        data['rooms'].value_counts().iloc[:6].index), 'Other')
+    data['rooms'] = data['rooms'].where(
+        lambda x: x.isin(data['rooms'].value_counts().iloc[:6].index), 'Other')
 
-    data['postcode'] = data['postcode'].explode().astype(
-        float).groupby(level=0).mean() // 100
+    data['postcode'] = data['postcode'].explode().astype(float).groupby(
+        level=0).mean() // 100
     data['is_apart'] = data['rooms'].str.contains('апарт')
     data['n_rooms'] = data['rooms'].str.extract('(\d)').fillna(0).astype(float)
     return data
@@ -50,20 +54,23 @@ def general_prepare(load_data):
        group_name='DataPrepare')
 def get_meta_features(general_clean_data):
 
-    general_clean_data['area_obj_cnt'] = general_clean_data.groupby('Округ')[
-        'rubm2'].transform('count')
-    general_clean_data['metro_obj_cnt'] = general_clean_data.groupby('Метро')[
-        'rubm2'].transform('count')
-    general_clean_data['district_obj_cnt'] = general_clean_data.groupby('Район')[
-        'rubm2'].transform('count')
-    general_clean_data['Округ'] = general_clean_data.groupby('Округ')[
-        'rubm2'].transform('mean')
-    general_clean_data['Метро'] = general_clean_data.groupby('Метро')[
-        'rubm2'].transform('mean')
-    general_clean_data['Район'] = general_clean_data.groupby('Район')[
-        'rubm2'].transform('mean')
+    general_clean_data['area_obj_cnt'] = general_clean_data.groupby(
+        'Округ')['rubm2'].transform('count')
+    general_clean_data['metro_obj_cnt'] = general_clean_data.groupby(
+        'Метро')['rubm2'].transform('count')
+    general_clean_data['district_obj_cnt'] = general_clean_data.groupby(
+        'Район')['rubm2'].transform('count')
+    general_clean_data['Округ'] = general_clean_data.groupby(
+        'Округ')['rubm2'].transform('mean')
+    general_clean_data['Метро'] = general_clean_data.groupby(
+        'Метро')['rubm2'].transform('mean')
+    general_clean_data['Район'] = general_clean_data.groupby(
+        'Район')['rubm2'].transform('mean')
 
-    return general_clean_data[['area_obj_cnt', 'metro_obj_cnt', 'district_obj_cnt', 'Округ', 'Метро', 'Район']]
+    return general_clean_data[[
+        'area_obj_cnt', 'metro_obj_cnt', 'district_obj_cnt', 'Округ', 'Метро',
+        'Район'
+    ]]
 
 
 @asset(name='advance_home_data',
@@ -73,7 +80,8 @@ def get_meta_features(general_clean_data):
 def adv_home_prepare(general_clean_data):
 
     feature_dict = general_clean_data['advanced_home_info'].apply(
-        lambda x: pd.DataFrame(x).set_index('key')['value'].to_dict()).rename('advacned_info')
+        lambda x: pd.DataFrame(x).set_index('key')['value'].to_dict()).rename(
+            'advacned_info')
     result_dict = {}
     result_dict['year_of_build'] = feature_dict.apply(
         lambda x: x.get('Год_ввода_в_эксплуатацию'))
@@ -90,21 +98,20 @@ def adv_home_prepare(general_clean_data):
 @asset(name='result_dataset',
        compute_kind='Python',
        description='Объединение данных',
-       config_schema={'nan_inputer':bool},
+       config_schema={'nan_inputer': bool},
        group_name='DataPrepare')
-def data_pipeline(context,
-                    general_clean_data,
-                  advance_home_data,
-                  meta_features
-                  ):
+def data_pipeline(context, general_clean_data, advance_home_data,
+                  meta_features):
     concated = general_clean_data.drop(['Округ', 'Метро', 'Район'], axis=1)\
         .join(advance_home_data)\
         .join(meta_features).select_dtypes(exclude='O')
-    
+
     if context.op_config['nan_inputer']:
         imputer = KNNImputer(n_neighbors=10, weights="distance")
         result = imputer.fit_transform(concated)
-        return pd.DataFrame(result,columns=concated.columns,index=concated.index)
+        return pd.DataFrame(result,
+                            columns=concated.columns,
+                            index=concated.index)
 
     return concated
 
@@ -152,11 +159,14 @@ def split_data(result_dataset):
        group_name='Fit')
 def fit_model(context, train_data, train_target):
 
-    x, xv, y, yv = model_selection.train_test_split(
-        train_data, train_target, train_size=.85)
+    x, xv, y, yv = model_selection.train_test_split(train_data,
+                                                    train_target,
+                                                    train_size=.85)
 
-    model = CatBoostRegressor(
-        iterations=10000,early_stopping_rounds=200, loss_function='MAE', verbose=500)
+    model = CatBoostRegressor(iterations=10000,
+                              early_stopping_rounds=200,
+                              loss_function='MAE',
+                              verbose=500)
     model.fit(x, y, verbose=500, eval_set=(xv, yv))
 
     return model
@@ -179,26 +189,38 @@ def check_model_performanse(context, fit_model, test_data, test_target):
         clipped_idx = test_target.where(
             lambda x: x < x.quantile(.9)).reset_index(drop=True).dropna().index
         yhat = fit_model.predict(test_data)
-        metric_dict.update(
-            {'mape': metrics.mean_absolute_percentage_error(test_target, yhat)})
+        metric_dict.update({
+            'mape':
+            metrics.mean_absolute_percentage_error(test_target, yhat)
+        })
         metric_dict.update(
             {'rmse': metrics.mean_squared_error(test_target, yhat)**.5})
         metric_dict.update(
             {'mae': metrics.mean_absolute_error(test_target, yhat)})
 
-        metric_dict.update({'clipped_mape': metrics.mean_absolute_percentage_error(
-            test_target.iloc[clipped_idx], yhat[clipped_idx])})
-        metric_dict.update({'clipped_rmse': metrics.mean_squared_error(
-            test_target.iloc[clipped_idx], yhat[clipped_idx])**.5})
-        metric_dict.update({'clipped_mae': metrics.mean_absolute_error(
-            test_target.iloc[clipped_idx], yhat[clipped_idx])})
+        metric_dict.update({
+            'clipped_mape':
+            metrics.mean_absolute_percentage_error(
+                test_target.iloc[clipped_idx], yhat[clipped_idx])
+        })
+        metric_dict.update({
+            'clipped_rmse':
+            metrics.mean_squared_error(test_target.iloc[clipped_idx],
+                                       yhat[clipped_idx])**.5
+        })
+        metric_dict.update({
+            'clipped_mae':
+            metrics.mean_absolute_error(test_target.iloc[clipped_idx],
+                                        yhat[clipped_idx])
+        })
 
         singaturka = infer_signature(test_data, test_target)
 
-        model_info = mlflow.catboost.log_model(fit_model,
-                                               artifact_path='models',
-                                               registered_model_name="catboost_v1",
-                                               signature=singaturka)
+        model_info = mlflow.catboost.log_model(
+            fit_model,
+            artifact_path='models',
+            registered_model_name="catboost_v1",
+            signature=singaturka)
 
         # mlflow.evaluate(
         #     model=model_info.model_uri,
@@ -207,7 +229,6 @@ def check_model_performanse(context, fit_model, test_data, test_target):
         #     model_type="regressor",
         #     evaluators=["default"],
         # )
-
 
         mlflow.log_metrics(metric_dict)
     # joblib.dump(fit_model, '../models/catboost_v1.joblib')
