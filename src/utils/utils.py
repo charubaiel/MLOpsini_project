@@ -19,7 +19,8 @@ BASE_URL = 'https://dom.mingkh.ru'
 geolocator = Nominatim(
     timeout=10,
     user_agent=
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
+    '''Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
+    (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'''
 )
 geocode = RateLimiter(geolocator.geocode,
                       min_delay_seconds=RATE_REQUEST_LIMIT,
@@ -42,10 +43,10 @@ def retry(times: int = 2, sleep_timeout: float = SLEEP_SECONDS):
             while attempt < times:
                 try:
                     return func(*args, **kwargs)
-                except Exception:
+                except Exception as e:
                     print(
-                        'Exception thrown when attempting to run %s, attempt '
-                        '%d of %d' % (func, attempt, times))
+                        f'Exception {e} thrown when attempting to run {func}, attempt '
+                        f'{attempt} of {times}')
                     time.sleep(sleep_timeout)
                     attempt += 1
             return func(*args, **kwargs)
@@ -72,7 +73,8 @@ def get_avito_item_info(item: BeautifulSoup):
             item_desc['JK'] = item.find('div', {
                 'data-marker': 'item-development-name'
             }).text
-        except:
+        except Exception as e:
+            print(f'{e}')
             item_desc['JK'] = ''
         item_desc['adress'] = item.find('div', {
             'data-marker': 'item-address'
@@ -88,7 +90,8 @@ def get_avito_item_info(item: BeautifulSoup):
         item_desc['metro_branch'] = item.find(
             'i', {'class': 'geo-icon-Cr9YM'})['style'].replace(
                 'background-color:', '')
-    except:
+    except Exception as e:
+        print(e)
         pass
 
     return item_desc
@@ -128,7 +131,8 @@ def get_cian_item_info(item: BeautifulSoup):
                 'data-name': 'SpecialGeo'
             }).text.split('\n') if i != ''
         ][1]
-    except:
+    except Exception as e:
+        print(e)
         item_desc['metro_branch'] = ''
         item_desc['metro_name'] = ''
         item_desc['metro_dist'] = ''
@@ -190,6 +194,7 @@ def get_advanced_home_data(name_series: pd.Series) -> dict:
         result = parse_home_page(url_)
         return result.to_dict()
     except Exception as e: 
+        print(e)
         return {'Год_ввода_в_эксплуатацию':-1}
 
 

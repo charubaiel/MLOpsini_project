@@ -27,7 +27,8 @@ def check_similarity(text_a: str, text_b: str) -> float:
     vec_b = get_sentence_vector(text_b)
     try:
         return cosine(vec_a, vec_b)
-    except:
+    except Exception as e:
+        print(e)
         return None
 
 

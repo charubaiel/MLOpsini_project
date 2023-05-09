@@ -1,3 +1,4 @@
+from utils.configs import ParserResource, S3Resource
 import yaml
 import hashlib
 import time
@@ -6,14 +7,13 @@ from multiprocessing import Pool
 import numpy as np
 
 partition_keys = ['room1', 'room2', 'room3']
-from utils.configs import ParserResource ,S3Resource
 
 with open('ETLs/config.yml') as f:
     params = yaml.safe_load(f)
 op_config = params['ops']['page_list']['config']
 
-def fetch_cian( partition:str):
 
+def fetch_cian(partition: str):
 
     parser = ParserResource()
     s3 = S3Resource()
@@ -46,12 +46,11 @@ def fetch_cian( partition:str):
         name = hashlib.md5(file.read()).hexdigest() + f'_{partition}.html'
 
         s3_client.save_file(bucket='raw', name=name, file=file)
-        page+=1
+        page += 1
 
         print(f'Partition : {partition} | Page_num: {page}')
 
 
-
 if __name__ == '__main__':
     with Pool(3) as p:
-        p.map(fetch_cian,partition_keys)
+        p.map(fetch_cian, partition_keys)
