@@ -8,7 +8,10 @@ from mlflow.models.signature import infer_signature
 from sklearn.impute import KNNImputer
 
 mlflow.set_tracking_uri('http://localhost:8112')
-mlflow.set_experiment('cian_rubm2_predict')
+try:
+    mlflow.set_experiment('cian_rubm2_predict')
+except:
+    pass
 
 
 @asset(name='load_data',
