@@ -59,10 +59,10 @@
 # local run
 
 ```bash
-
+pip install poetry # если не установлен
 poetry install
 poetry shell
 
-cd pipelines && bash start.sh
+cd src && bash start.sh
 
 ```
