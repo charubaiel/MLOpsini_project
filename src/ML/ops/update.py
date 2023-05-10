@@ -164,7 +164,6 @@ def fit_model(context, train_data, train_target):
                                                     train_size=.85)
 
     model = CatBoostRegressor(iterations=10000,
-                              early_stopping_rounds=200,
                               loss_function='MAE',
                               verbose=500)
     model.fit(x, y, verbose=500, eval_set=(xv, yv))
