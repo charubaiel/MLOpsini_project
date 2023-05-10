@@ -15,11 +15,12 @@ RATE_REQUEST_LIMIT = 1.44
 SLEEP_SECONDS = 5
 BASE_SEARCH_URL = 'https://dom.mingkh.ru/search?searchtype=house&address='
 BASE_URL = 'https://dom.mingkh.ru'
+UA = ('''Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ''' +
+      '''(KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36''')
 
 geolocator = Nominatim(
     timeout=10,
-    user_agent='''Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
-    (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36''')
+    user_agent=UA)
 geocode = RateLimiter(geolocator.geocode,
                       min_delay_seconds=RATE_REQUEST_LIMIT,
                       max_retries=2,
@@ -31,13 +32,14 @@ warnings.simplefilter('ignore')
 def retry(times: int = 2, sleep_timeout: float = SLEEP_SECONDS):
     """
     Retry Decorator
-    
+
     """
 
     def decorator(func):
 
         def newfn(*args, **kwargs):
             attempt = 0
+            sleep_timeout = SLEEP_SECONDS
             while attempt < times:
                 try:
                     return func(*args, **kwargs)
@@ -46,6 +48,7 @@ def retry(times: int = 2, sleep_timeout: float = SLEEP_SECONDS):
                         f'Exception {e} thrown when attempting to run {func}, attempt '
                         f'{attempt} of {times}')
                     time.sleep(sleep_timeout)
+                    sleep_timeout *= 2
                     attempt += 1
             return func(*args, **kwargs)
 
@@ -119,21 +122,26 @@ def get_cian_item_info(item: BeautifulSoup):
         item_desc['metro_branch'] = item.find(
             'div', {'data-name': 'UndergroundIconWrapper'})['style'].replace(
                 'color: rgb', '').replace(';', '')
+    except Exception:
+        item_desc['metro_branch'] = ''
+
+    try:
         item_desc['metro_name'] = [
             i for i in item.find('div', {
                 'data-name': 'SpecialGeo'
             }).text.split('\n') if i != ''
         ][0]
+    except Exception:
+        item_desc['metro_name'] = ''
+    try:
         item_desc['metro_dist'] = [
             i for i in item.find('div', {
                 'data-name': 'SpecialGeo'
             }).text.split('\n') if i != ''
         ][1]
-    except Exception as e:
-        print(e)
-        item_desc['metro_branch'] = ''
-        item_desc['metro_name'] = ''
+    except Exception:
         item_desc['metro_dist'] = ''
+
     item_desc['img_list'] = [
         img['src'] for img in item.find('div', {
             'data-name': 'Gallery'

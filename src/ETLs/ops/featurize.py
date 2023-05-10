@@ -60,7 +60,7 @@ def convert_html_2_df_cian(context, s3: S3Resource,
        description='Оставление уникальных значений',
        group_name='Extract')
 def pass_new_data(context, db: DatabaseResource,
-                  cian_raw_df: pd.DataFrame) -> pd.DataFrame:
+                  cian_raw_df: pd.DataFrame) -> Output[pd.DataFrame]:
 
     cian_df = cian_raw_df
     client = db.get_client()
@@ -197,7 +197,8 @@ def featuring_cian_data(
 
     result['price'] = result['price'].astype(float)
     result['rubm2'] = result['price'] / result['m2']
-    result = result.rename(columns=lambda x: x.replace(' ', '_'))
+    result = result.rename(columns=lambda x: x.replace(' ', '_'))\
+                    .astype({'datetime':'datetime64[s]'})
 
     return result
 
