@@ -60,13 +60,13 @@ def parsing_schedule():
 
 
 @sensor(job=featurize_job,
-        minimum_interval_seconds=60 * 60,
+        minimum_interval_seconds=60,
         default_status=DefaultSensorStatus.RUNNING)
 def check_updates():
     has_new_data = len(
         [i for i in Path(f'{ROOT.parent.parent}/data/raw').glob('*')])
     if has_new_data:
-        return RunRequest()
+        return RunRequest(run_key='updating')
 
 
 defs = Definitions(assets=parse_assets + featurize_assets,
