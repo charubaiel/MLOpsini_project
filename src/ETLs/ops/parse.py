@@ -39,7 +39,7 @@ def fetch_cian(context, parser: ParserResource) -> list:
         context.log.info(len(response))
         time.sleep(np.random.poisson(2))
 
-        page_list.append(BytesIO(response.encode()))
+        page_list.append(response.encode())
 
         url = url.replace(f'&p={page}', f'&p={page+1}')
 
@@ -58,6 +58,6 @@ def save_data_s3(context, s3: S3Resource, page_list: list) -> None:
     client = s3.get_client()
     partition = context.asset_partition_key_for_output()
     for page in page_list:
-        name = hashlib.md5(page.read()).hexdigest() + f'_{partition}.html'
-        file = page
-        client.save_file(bucket='raw', name=name, file=file)
+
+        name = hashlib.md5(page).hexdigest() + f'_{partition}.html'
+        client.save_file(bucket='raw', name=name, file=page)

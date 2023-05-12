@@ -51,16 +51,16 @@ featurize_job = define_asset_job(name='featurize_data',
 )
 def parsing_schedule():
     run_config = config.copy()
-    run_config['ops']['page_list']['config']['fetch_pages'] = 1
-    if np.random.beta(1, 1) >= .5:
-        for partition in partition_keys:
-            yield RunRequest(run_key=partition,
-                             run_config=run_config,
-                             partition_key=partition)
+    # run_config['ops']['page_list']['config']['fetch_pages'] = 1
+    # if np.random.beta(1, 1) >= .5:
+    for partition in partition_keys:
+        yield RunRequest(run_key=partition,
+                            run_config=run_config,
+                            partition_key=partition)
 
 
 @sensor(job=featurize_job,
-        minimum_interval_seconds=60,
+        minimum_interval_seconds=30,
         default_status=DefaultSensorStatus.RUNNING)
 def check_updates():
     files = [i.__str__() for i in Path(f'{ROOT.parent.parent}/data/raw').glob('*')]
