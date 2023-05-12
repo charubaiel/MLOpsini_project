@@ -40,10 +40,8 @@ class LocalDirConnection:
         filepath = Path(f'{self.path}/{bucket}/{name}')
         if not filepath.parent.exists():
             filepath.parent.mkdir(parents=True, exist_ok=True)
-
-        with filepath.open("wb") as f:
-            file.seek(0)
-            f.write(file.read())
+        
+        filepath.write_bytes(file)
 
     def get_filenames(self, bucket: str) -> list:
 
@@ -56,8 +54,8 @@ class LocalDirConnection:
 
     def get_data(self, filename: str) -> str:
 
-        with open(filename) as buffer:
-            return buffer.read()
+         return Path(f'{filename}').read_text(encoding='utf-8')
+
 
     def remove_data(self, filename: str) -> None:
         Path(filename).unlink()

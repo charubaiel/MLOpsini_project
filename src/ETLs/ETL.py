@@ -63,10 +63,10 @@ def parsing_schedule():
         minimum_interval_seconds=60,
         default_status=DefaultSensorStatus.RUNNING)
 def check_updates():
-    has_new_data = len(
-        [i for i in Path(f'{ROOT.parent.parent}/data/raw').glob('*')])
+    files = [i.__str__() for i in Path(f'{ROOT.parent.parent}/data/raw').glob('*')]
+    has_new_data = len(files)>0
     if has_new_data:
-        return RunRequest(run_key='updating')
+        return RunRequest(run_key='|'.join(files))
 
 
 defs = Definitions(assets=parse_assets + featurize_assets,

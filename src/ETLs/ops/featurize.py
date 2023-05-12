@@ -15,9 +15,15 @@ from utils.utils import geocode, get_advanced_home_data, get_cian_item_info
        group_name='Extract')
 def get_raw_data(context, s3: S3Resource) -> list:
     client = s3.get_client()
-    page_list = client.get_filenames('raw')
+    unprocessed_filenames = client.get_filenames('raw')
 
-    return page_list
+    for file in unprocessed_filenames:
+        file_bytes = client.get_data(file).encode()
+        client.save_file(bucket='editing', name=file.name, file=file_bytes)
+        client.remove_data(file)
+
+    unprocessed_filenames = client.get_filenames('editing')
+    return unprocessed_filenames
 
 
 @asset(name='cian_raw_df',
@@ -76,7 +82,13 @@ def pass_new_data(context, db: DatabaseResource,
         check_old = set([])
 
     diff_ = check_new - check_old
-    assert len(diff_) > 0, 'No New Updates to load'
+    if len(diff_) < 0: 
+        Output(pd.DataFrame(),
+                  metadata={
+                      'files_parsed': len(check_new),
+                      'pct_new': 0
+                  })
+
 
     new_urls_filter = [url[0] for url in diff_]
     cian_df = cian_raw_df.loc[cian_raw_df['url'].isin(new_urls_filter)]
@@ -92,6 +104,9 @@ def pass_new_data(context, db: DatabaseResource,
        description='Получение фичей на основе гео данных',
        group_name='Featurize')
 def geo_features(cian_df: Output[pd.DataFrame]) -> pd.DataFrame:
+
+    if cian_df.shape[0] == 0:
+        return pd.DataFrame()
 
     result = {}
     adresses = cian_df.loc[:, ['Улица', 'Дом']].fillna('').apply(', '.join,
@@ -121,6 +136,9 @@ def geo_features(cian_df: Output[pd.DataFrame]) -> pd.DataFrame:
        group_name='Featurize')
 def text_features(cian_df: pd.DataFrame) -> pd.DataFrame:
 
+    if cian_df.shape[0] == 0:
+        return pd.DataFrame()
+    
     result = {}
     text_series = cian_df['text'].str.lower()
 
@@ -147,6 +165,9 @@ def text_features(cian_df: pd.DataFrame) -> pd.DataFrame:
        group_name='Featurize')
 def title_features(cian_df: pd.DataFrame) -> pd.DataFrame:
 
+    if cian_df.shape[0] == 0:
+        return pd.DataFrame()
+
     title_series = cian_df['title'].str.lower().to_frame()
     title_series[['rooms', 'm2', 'floor']] = title_series['title'].str.replace(
         ',(?=\d)', '.').str.split(',', expand=True).iloc[:, :3]
@@ -166,6 +187,10 @@ def title_features(cian_df: pd.DataFrame) -> pd.DataFrame:
        description='Получение дополнительных фичей из базы МинЖКХ',
        group_name='Featurize')
 def advanced_home_features(cian_df: pd.DataFrame) -> pd.Series:
+
+    if cian_df.shape[0] == 0:
+        return pd.Series()
+
     result_list = {}
     home_adress_df = cian_df.loc[:,
                                  ['Город', 'Округ', 'Улица', 'Дом']].fillna('')
@@ -188,6 +213,9 @@ def featuring_cian_data(
     advanced_home_features: pd.Series,
 ) -> pd.DataFrame:
 
+    if cian_df.shape[0] == 0:
+        return pd.DataFrame()
+    
     cian_df.drop(['title'], axis=1, inplace=True)
 
     result = cian_df.join(title_features)\
@@ -209,8 +237,13 @@ def featuring_cian_data(
        compute_kind='SQL')
 def save_data_cian(context, db: DatabaseResource,
                    featurized_cian_data: pd.DataFrame) -> str:
+    
+    if featurized_cian_data.shape[0] == 0:
+        return 'ok'
+    
     client = db.get_client()
     client.append_df(featurized_cian_data, 'intel.cian')
+
     return 'ok'
 
 
