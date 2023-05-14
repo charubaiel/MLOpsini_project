@@ -5,15 +5,23 @@ import time
 from io import BytesIO
 from multiprocessing import Pool
 import numpy as np
+import click
+
 
 partition_keys = ['room1', 'room2', 'room3']
 
-with open('ETLs/config.yml') as f:
-    params = yaml.safe_load(f)
-op_config = params['ops']['page_list']['config']
 
+@click.command()
+@click.option('--max_pages', default=10, help='Number of page parse.')
+@click.option('--config_path', default='ETLs/config.yml' , prompt='path to configs',
+              help='download and save raw pages.')
+def fetch_cian(partition: str,max_pages = 10,config_path:str='ETLs/config.yml'):
 
-def fetch_cian(partition: str):
+    
+    with open(config_path) as f:
+        params = yaml.safe_load(f)
+    op_config = params['ops']['page_list']['config']
+
 
     parser = ParserResource()
     s3 = S3Resource()
@@ -31,7 +39,8 @@ def fetch_cian(partition: str):
 
     last_status_code = 200
     page = 1
-    while last_status_code == 200:
+    
+    while (last_status_code == 200 ) | (page == max_pages):
 
         # response = client.get(url)
         response = client.parser.get(url)
