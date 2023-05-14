@@ -28,6 +28,7 @@ shap = "^0.41.0"
 yapf = "^0.33.0"
 ruff = "^0.0.265"
 lightgbm = "^3.3.5"
+dvc = "^2.56.0"
 
 [tool.poetry.dev-dependencies]
 

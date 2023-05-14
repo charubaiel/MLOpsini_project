@@ -60,7 +60,7 @@ def parsing_schedule():
 
 
 @sensor(job=featurize_job,
-        minimum_interval_seconds=30,
+        minimum_interval_seconds=60*5,
         default_status=DefaultSensorStatus.RUNNING)
 def check_updates():
     files = [i.__str__() for i in Path(f'{ROOT.parent.parent}/data/raw').glob('*')]

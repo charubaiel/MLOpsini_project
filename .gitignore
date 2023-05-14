@@ -7,3 +7,4 @@ __pycache__
 *.lock
 catboost_info
 *mlflow
+!.dvc
