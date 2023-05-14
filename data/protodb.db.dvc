@@ -1,0 +1,4 @@
+outs:
+- md5: 5d7985cb835476be6debaa34a7ea7f75
+  size: 25702400
+  path: protodb.db
