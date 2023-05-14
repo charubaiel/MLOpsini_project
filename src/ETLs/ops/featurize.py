@@ -83,7 +83,7 @@ def pass_new_data(context, db: DatabaseResource,
 
     diff_ = check_new - check_old
     if len(diff_) < 0: 
-        Output(pd.DataFrame(),
+        return Output(pd.DataFrame(),
                   metadata={
                       'files_parsed': len(check_new),
                       'pct_new': 0
