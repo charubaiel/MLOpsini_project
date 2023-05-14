@@ -4,15 +4,15 @@ from catboost import CatBoostRegressor
 import mlflow
 from mlflow.models.signature import infer_signature
 from sklearn.impute import KNNImputer
-from utils.loggers import _logger,logger
+from utils.loggers import _logger, logger
 import click
-
 
 mlflow.set_tracking_uri('http://localhost:8112')
 try:
     mlflow.set_experiment('cian_rubm2_predict')
 except:
     pass
+
 
 @logger
 def get_data() -> pd.DataFrame:
@@ -82,10 +82,10 @@ def adv_home_prepare(general_clean_data):
 
 
 @logger
-def data_pipeline(general_clean_data:pd.DataFrame,
-                  advance_home_data:pd.DataFrame,
-                  meta_features:pd.DataFrame,
-                  nan_inputer:bool=True):
+def data_pipeline(general_clean_data: pd.DataFrame,
+                  advance_home_data: pd.DataFrame,
+                  meta_features: pd.DataFrame,
+                  nan_inputer: bool = True):
     concated = general_clean_data.drop(['Округ', 'Метро', 'Район'], axis=1)\
         .join(advance_home_data)\
         .join(meta_features).select_dtypes(exclude='O')
@@ -106,15 +106,16 @@ def split_op_data(result_dataset):
     X = result_dataset.drop('rubm2', axis=1)
     Y = result_dataset['rubm2']
 
-    x, xv, y, yv = model_selection.train_test_split(X, Y, train_size=.75,random_state=1441)
+    x, xv, y, yv = model_selection.train_test_split(X,
+                                                    Y,
+                                                    train_size=.75,
+                                                    random_state=1441)
 
     return x, xv, y, yv
 
 
-
-
 @logger
-def fit_model( train_data, train_target):
+def fit_model(train_data, train_target):
 
     x, xv, y, yv = model_selection.train_test_split(train_data,
                                                     train_target,
@@ -129,7 +130,7 @@ def fit_model( train_data, train_target):
 
 
 @logger
-def check_model_performanse( fit_model, test_data, test_target):
+def check_model_performanse(fit_model, test_data, test_target):
 
     with mlflow.start_run(run_name='base_test') as run:
 
@@ -184,7 +185,6 @@ def check_model_performanse( fit_model, test_data, test_target):
         mlflow.log_metrics(metric_dict)
 
 
-
 @logger
 @click.command()
 def fit_model_pipeline():
@@ -192,10 +192,7 @@ def fit_model_pipeline():
     df = general_prepare(data)
     meta_features = get_meta_features(df)
     home_features = adv_home_prepare(df)
-    result_df = data_pipeline(df,
-                  home_features,
-                  meta_features,
-                  True)
+    result_df = data_pipeline(df, home_features, meta_features, True)
     x, xv, y, yv = split_op_data(result_df)
-    model = fit_model(x,y)
-    check_model_performanse(model,xv,yv)
+    model = fit_model(x, y)
+    check_model_performanse(model, xv, yv)

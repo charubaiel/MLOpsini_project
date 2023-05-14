@@ -6,15 +6,15 @@ from geopy import distance
 from tqdm import tqdm
 from utils.configs import DatabaseResource, S3Resource
 from utils.utils import geocode, get_advanced_home_data, get_cian_item_info
-from utils.loggers import _logger,logger
+from utils.loggers import _logger, logger
 import click
-
 
 s3 = S3Resource()
 db = DatabaseResource()
 
+
 @logger
-def get_raw_data( s3: S3Resource) -> list:
+def get_raw_data(s3: S3Resource) -> list:
     client = s3.get_client()
     unprocessed_filenames = client.get_filenames('raw')
 
@@ -28,8 +28,7 @@ def get_raw_data( s3: S3Resource) -> list:
 
 
 @logger
-def convert_html_2_df_cian(
-                           unprocessed_filenames: list) -> pd.DataFrame:
+def convert_html_2_df_cian(unprocessed_filenames: list) -> pd.DataFrame:
 
     client = s3.get_client()
     result_list = []
@@ -60,8 +59,7 @@ def convert_html_2_df_cian(
 
 
 @logger
-def pass_new_data(
-                  cian_raw_df: pd.DataFrame) -> pd.DataFrame:
+def pass_new_data(cian_raw_df: pd.DataFrame) -> pd.DataFrame:
 
     cian_df = cian_raw_df
     client = db.get_client()
@@ -77,14 +75,14 @@ def pass_new_data(
         check_old = set([])
 
     diff_ = check_new - check_old
-    if len(diff_) < 0: 
+    if len(diff_) < 0:
         return pd.DataFrame()
-
 
     new_urls_filter = [url[0] for url in diff_]
     cian_df = cian_raw_df.loc[cian_raw_df['url'].isin(new_urls_filter)]
 
     return cian_df
+
 
 @logger
 def geo_features(cian_df: pd.DataFrame) -> pd.DataFrame:
@@ -120,7 +118,7 @@ def text_features(cian_df: pd.DataFrame) -> pd.DataFrame:
 
     if cian_df.shape[0] == 0:
         return pd.DataFrame()
-    
+
     result = {}
     text_series = cian_df['text'].str.lower()
 
@@ -190,7 +188,7 @@ def featuring_cian_data(
 
     if cian_df.shape[0] == 0:
         return pd.DataFrame()
-    
+
     cian_df.drop(['title'], axis=1, inplace=True)
 
     result = cian_df.join(title_features)\
@@ -207,12 +205,11 @@ def featuring_cian_data(
 
 
 @logger
-def save_data_cian(
-                   featurized_cian_data: pd.DataFrame) -> str:
-    
+def save_data_cian(featurized_cian_data: pd.DataFrame) -> str:
+
     if featurized_cian_data.shape[0] == 0:
         return 'ok'
-    
+
     client = db.get_client()
     client.append_df(featurized_cian_data, 'intel.cian')
 
@@ -220,21 +217,16 @@ def save_data_cian(
 
 
 @logger
-def remove_used_data( unprocessed_filenames: list,
-                     save_cian_data: str) -> None:
+def remove_used_data(unprocessed_filenames: list, save_cian_data: str) -> None:
     if save_cian_data == 'ok':
         client = s3.get_client()
         [client.remove_data(file) for file in unprocessed_filenames]
 
 
-
-
-
-
 @logger
 @click.command()
 def featurize_pipeline():
-    
+
     raw_data_names = get_raw_data()
     raw_df = convert_html_2_df_cian(raw_data_names)
     new_raw_data = pass_new_data(raw_df)
@@ -242,12 +234,7 @@ def featurize_pipeline():
     text_df = text_features(new_raw_data)
     title_df = title_features(new_raw_data)
     advanced_home_df = advanced_home_features(new_raw_data)
-    result_df = featuring_cian_data(
-        new_raw_data,
-        title_df,
-        geo_df,
-        text_df,
-        advanced_home_df
-    )
+    result_df = featuring_cian_data(new_raw_data, title_df, geo_df, text_df,
+                                    advanced_home_df)
     save_result = save_data_cian(result_df)
-    remove_used_data(raw_data_names,save_result)
+    remove_used_data(raw_data_names, save_result)
