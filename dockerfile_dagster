@@ -10,6 +10,7 @@ RUN touch /opt/dagster/dagster_home/dagster.yaml
 WORKDIR /opt/dagster/app
 
 COPY ./src/ /opt/dagster/app/
+COPY ./pyproject.toml /opt/dagster/app/
 
 RUN apt-get update
 

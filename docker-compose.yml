@@ -6,9 +6,9 @@ services:
     build:
       context: .
       dockerfile: ./dockerfile_dagster
-
     entrypoint:
-      - dagster dev
+      - dagster
+      - dev
       - -h
       - "0.0.0.0"
       - -p
@@ -22,7 +22,8 @@ services:
         MLOPS_DB_PORT: ${MLOPS_DB_PORT}
         DAGSTER_DB: ${DAGSTER_DB}
     volumes:
-      - ./src/:/opt/dagster/dagster_app/
+      - ./src:/opt/dagster/app
+      - ./data:/opt/dagster/data
       - ./dagster.yaml:/opt/dagster/dagster_home/dagster.yaml
       - /var/run/docker.sock:/var/run/docker.sock
     expose:
@@ -31,8 +32,8 @@ services:
       - "${DAGSTER_PORT}:${DAGSTER_PORT}"
     networks:
       - rent_project
- mlops_db:
 
+  mlops_db:
     image: postgres:14
     restart: always
     container_name: mlops_db
@@ -96,10 +97,10 @@ services:
       - mlops_db
       - s3
     networks:
-
       - rent_project
+
 networks:
-  mlflow_net:
+  rent_project:
     driver: bridge
     name : 'rent_project'
 

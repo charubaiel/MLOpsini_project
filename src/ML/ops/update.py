@@ -2,12 +2,12 @@ from dagster import asset, graph_multi_asset, AssetOut, op, Out, Output
 import pandas as pd
 from sklearn import model_selection, metrics
 from catboost import CatBoostRegressor
-# import joblib
+from utils.utils import MLFLOW_PORT
 import mlflow
 from mlflow.models.signature import infer_signature
 from sklearn.impute import KNNImputer
 
-mlflow.set_tracking_uri('http://localhost:8112')
+mlflow.set_tracking_uri(f'http://localhost:{MLFLOW_PORT}')
 try:
     mlflow.set_experiment('cian_rubm2_predict')
 except:

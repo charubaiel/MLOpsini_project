@@ -1,7 +1,7 @@
 import time
 import warnings
 from difflib import SequenceMatcher
-
+import os
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 tqdm.pandas()
 
+MLFLOW_PORT = os.getenv('MLFLOW_PORT')
 RATE_REQUEST_LIMIT = 1.44
 SLEEP_SECONDS = 5
 BASE_SEARCH_URL = 'https://dom.mingkh.ru/search?searchtype=house&address='
@@ -27,6 +28,8 @@ geocode = RateLimiter(geolocator.geocode,
                       error_wait_seconds=SLEEP_SECONDS)
 
 warnings.simplefilter('ignore')
+
+
 
 
 def retry(times: int = 2, sleep_timeout: float = SLEEP_SECONDS):
