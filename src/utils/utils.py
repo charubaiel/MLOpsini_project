@@ -12,6 +12,10 @@ from tqdm import tqdm
 tqdm.pandas()
 
 MLFLOW_PORT = os.getenv('MLFLOW_PORT')
+assert MLFLOW_PORT is not None
+
+
+
 RATE_REQUEST_LIMIT = 1.44
 SLEEP_SECONDS = 5
 BASE_SEARCH_URL = 'https://dom.mingkh.ru/search?searchtype=house&address='

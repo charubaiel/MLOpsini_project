@@ -30,6 +30,7 @@ ruff = "^0.0.265"
 lightgbm = "^3.3.5"
 dvc = "^2.56.0"
 dagster-postgres = "^0.19.4"
+boto3 = "^1.26.135"
 
 [tool.poetry.dev-dependencies]
 

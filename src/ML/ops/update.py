@@ -80,7 +80,7 @@ def get_meta_features(general_clean_data):
 def adv_home_prepare(general_clean_data):
 
     feature_dict = general_clean_data['advanced_home_info'].apply(
-        lambda x: pd.DataFrame(x).set_index('key')['value'].to_dict()).rename(
+        lambda row: dict(zip(row['key'],row['value'])) if row is not None else {}).rename(
             'advacned_info')
     result_dict = {}
     result_dict['year_of_build'] = feature_dict.apply(

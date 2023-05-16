@@ -21,6 +21,7 @@ services:
         MLOPS_DB_PASSWORD: ${MLOPS_DB_PASSWORD}
         MLOPS_DB_PORT: ${MLOPS_DB_PORT}
         DAGSTER_DB: ${DAGSTER_DB}
+        MLFLOW_PORT: ${MLFLOW_PORT}
     volumes:
       - ./src:/opt/dagster/app
       - ./data:/opt/dagster/data
@@ -57,14 +58,14 @@ services:
     restart: always
     container_name: mlflow_s3
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${S3_API_PORT}:${S3_API_PORT}"
+      - "${S3_CONSOLE_PORT}:${S3_CONSOLE_PORT}"
     volumes:
       - ./data/s3:/data
     environment:
       MINIO_ACCESS_KEY: ${AWS_ACCESS_KEY_ID}
       MINIO_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY}
-    command: server --address ":9000" --console-address ":9001" /data/
+    command: server --address ":${S3_API_PORT}" --console-address ":${S3_CONSOLE_PORT}" /data/
     networks:
       - rent_project
   # Сервер трекинга и организации ML работ
@@ -81,7 +82,7 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - ARTIFACTS=s3://${AWS_BUCKET_NAME}
-      - MLFLOW_S3_ENDPOINT_URL=http://s3:9000
+      - MLFLOW_S3_ENDPOINT_URL=http://s3:${S3_API_PORT}
     ports:
       - ${MLFLOW_PORT}:${MLFLOW_PORT}
     command: 

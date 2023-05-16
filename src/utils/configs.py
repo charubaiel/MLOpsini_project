@@ -1,11 +1,13 @@
 from dataclasses import dataclass
-from io import BytesIO
+from io import BytesIO,StringIO
 from pathlib import Path
+import os 
 
 import cloudscraper
 import duckdb
 import pandas as pd
 from dagster import ConfigurableResource
+import boto3
 
 ROOT = Path(__file__).parent
 
@@ -59,6 +61,52 @@ class LocalDirConnection:
 
     def remove_data(self, filename: str) -> None:
         Path(filename).unlink()
+
+
+@dataclass
+class s3Connection:
+
+    def __post_init__(self):
+        # Let's use Amazon S3
+        my_config =  {
+                        'AWS_ACCESS_KEY_ID': os.getenv('AWS_ACCESS_KEY_ID'),
+                        'AWS_SECRET_ACCESS_KEY': os.getenv('AWS_SECRET_ACCESS_KEY')
+                        }
+                    
+
+        self.client = boto3.client('s3', config=my_config)
+
+        if 'raw' not in self.client.buckets.all():
+            self.client.create_bucket(Bucket='raw')
+
+    def save_file(self, bucket: str, name: str, file: BytesIO) -> None:
+
+        if bucket not in self.client.buckets.all():
+            self.client.create_bucket(Bucket=bucket)
+        try:
+            self.client.upload_fileobj(file, bucket, name)
+            return True
+        except Exception:
+            return False
+
+    def get_filenames(self, bucket: str) -> list:
+
+
+        bucket = self.client.Bucket(bucket)
+        result = [i for i in bucket.objects.all()]
+
+        return result
+
+    def get_data(self,bucket: str, filename: str) -> str:
+        
+        result = StringIO()
+        self.client.download_fileobj(bucket, filename, result)
+
+        return result
+
+    def remove_data(self, bucket: str, filename: str) -> None:
+        self.client.delete_object(Bucket=bucket, Key=filename)
+        return True
 
 
 @dataclass
