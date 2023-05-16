@@ -175,9 +175,8 @@ def mlflow_connect(context) -> str:
         
     MLFLOW_PORT = os.getenv('MLFLOW_PORT')
     assert MLFLOW_PORT is not None,'No MLFlow port'
-    context.log.warning(f'http://localhost:{MLFLOW_PORT}')
-    mlflow.set_tracking_uri(f'http://localhost:{MLFLOW_PORT}')
-    mlflow.set_experiment('cian_rubm2_predict')
+    mlflow.set_tracking_uri(f'http://mlflow_server:{MLFLOW_PORT}')
+    mlflow.set_experiment('cian_rubm2')
 
     return 'ok'
 
