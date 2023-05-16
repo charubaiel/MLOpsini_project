@@ -2,16 +2,10 @@ from dagster import asset, graph_multi_asset, AssetOut, op, Out, Output
 import pandas as pd
 from sklearn import model_selection, metrics
 from catboost import CatBoostRegressor
-from utils.utils import MLFLOW_PORT
 import mlflow
 from mlflow.models.signature import infer_signature
 from sklearn.impute import KNNImputer
-
-mlflow.set_tracking_uri(f'http://localhost:{MLFLOW_PORT}')
-try:
-    mlflow.set_experiment('cian_rubm2_predict')
-except:
-    pass
+import os
 
 
 @asset(
@@ -171,11 +165,30 @@ def fit_model(context, train_data, train_target):
     return model
 
 
+
+@asset(name='connect_mlflow',
+       compute_kind='ML',
+       description='Connect2server',
+       group_name='Evaluate')
+def mlflow_connect(context) -> str:
+
+        
+    MLFLOW_PORT = os.getenv('MLFLOW_PORT')
+    assert MLFLOW_PORT is not None,'No MLFlow port'
+    context.log.warning(f'http://localhost:{MLFLOW_PORT}')
+    mlflow.set_tracking_uri(f'http://localhost:{MLFLOW_PORT}')
+    mlflow.set_experiment('cian_rubm2_predict')
+
+    return 'ok'
+
+
+
+
 @asset(name='evaluate_model',
        compute_kind='Python',
        description='Проверка модельки',
        group_name='Evaluate')
-def check_model_performanse(context, fit_model, test_data, test_target):
+def check_model_performanse(context, fit_model, test_data, test_target,connect_mlflow):
 
     with mlflow.start_run(run_name='base_test') as run:
 

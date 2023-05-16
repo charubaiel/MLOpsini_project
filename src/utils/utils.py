@@ -1,7 +1,6 @@
 import time
 import warnings
 from difflib import SequenceMatcher
-import os
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -11,8 +10,6 @@ from tqdm import tqdm
 
 tqdm.pandas()
 
-MLFLOW_PORT = os.getenv('MLFLOW_PORT')
-assert MLFLOW_PORT is not None
 
 
 
