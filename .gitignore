@@ -10,3 +10,5 @@ catboost_info
 !.dvc
 !dockerfile*
 !.env_example
+!*.sh
+data
