@@ -21,7 +21,8 @@ services:
         MLOPS_DB_PASSWORD: ${MLOPS_DB_PASSWORD}
         MLOPS_DB_PORT: ${MLOPS_DB_PORT}
         DAGSTER_DB: ${DAGSTER_DB}
-        MLFLOW_PORT: ${MLFLOW_PORT}
+    env_file:
+    - .env
     volumes:
       - ./src:/opt/dagster/app
       - ./data:/opt/dagster/data

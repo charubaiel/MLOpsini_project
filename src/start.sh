@@ -13,8 +13,8 @@ run_coordinator:
 EOF
 
 fi
-DAGSTER_HOME=$PWD'/.DH' dagster dev -p 8111 &
-mlflow ui --backend-store-uri '../models/mlflow' --artifacts-destination '../models/mlflow' --port 8112
+DAGSTER_HOME=$PWD'/.DH' dagster dev -p 8117 &
+mlflow ui --backend-store-uri '../models/mlflow' --artifacts-destination '../models/mlflow' --port 8118
 
 
 

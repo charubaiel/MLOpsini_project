@@ -1,0 +1,4 @@
+ops:
+  result_dataset:
+    config:
+      nan_inputer: true

@@ -8,6 +8,13 @@ from sklearn.impute import KNNImputer
 import os
 
 
+
+mlflow.set_tracking_uri(
+    f"http://mlflow_server:{os.getenv('MLFLOW_PORT')}")
+mlflow.set_experiment('MLopsProject')
+
+
+
 @asset(
     name='load_data',
     compute_kind='SQL',
@@ -74,8 +81,8 @@ def get_meta_features(general_clean_data):
 def adv_home_prepare(general_clean_data):
 
     feature_dict = general_clean_data['advanced_home_info'].apply(
-        lambda row: dict(zip(row['key'],row['value'])) if row is not None else {}).rename(
-            'advacned_info')
+        lambda row: dict(zip(row['key'], row['value']))
+        if row is not None else {}).rename('advacned_info')
     result_dict = {}
     result_dict['year_of_build'] = feature_dict.apply(
         lambda x: x.get('Год_ввода_в_эксплуатацию'))
@@ -166,30 +173,13 @@ def fit_model(context, train_data, train_target):
 
 
 
-@asset(name='connect_mlflow',
-       compute_kind='ML',
-       description='Connect2server',
-       group_name='Evaluate')
-def mlflow_connect(context) -> str:
-
-        
-    MLFLOW_PORT = os.getenv('MLFLOW_PORT')
-    assert MLFLOW_PORT is not None,'No MLFlow port'
-    mlflow.set_tracking_uri(f'http://mlflow_server:{MLFLOW_PORT}')
-    mlflow.set_experiment('cian_rubm2')
-
-    return 'ok'
-
-
-
-
 @asset(name='evaluate_model',
        compute_kind='Python',
        description='Проверка модельки',
        group_name='Evaluate')
-def check_model_performanse(context, fit_model, test_data, test_target,connect_mlflow):
+def check_model_performanse(context, fit_model, test_data, test_target):
 
-    with mlflow.start_run(run_name='base_test') as run:
+    with mlflow.start_run(run_name='base_test'):
 
         mlflow.autolog()
 
@@ -227,11 +217,10 @@ def check_model_performanse(context, fit_model, test_data, test_target,connect_m
 
         singaturka = infer_signature(test_data, test_target)
 
-        model_info = mlflow.catboost.log_model(
-            fit_model,
-            artifact_path='models',
-            registered_model_name="catboost_v1",
-            signature=singaturka)
+        mlflow.catboost.log_model(fit_model,
+                                  artifact_path='models',
+                                  registered_model_name="catboost_v1",
+                                  signature=singaturka)
 
         # mlflow.evaluate(
         #     model=model_info.model_uri,
