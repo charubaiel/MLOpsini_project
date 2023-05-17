@@ -82,13 +82,12 @@ def pass_new_data(context, db: DatabaseResource,
         check_old = set([])
 
     diff_ = check_new - check_old
-    if len(diff_) < 0: 
+    if len(diff_) < 0:
         return Output(pd.DataFrame(),
-                  metadata={
-                      'files_parsed': len(check_new),
-                      'pct_new': 0
-                  })
-
+                      metadata={
+                          'files_parsed': len(check_new),
+                          'pct_new': 0
+                      })
 
     new_urls_filter = [url[0] for url in diff_]
     cian_df = cian_raw_df.loc[cian_raw_df['url'].isin(new_urls_filter)]
@@ -138,7 +137,7 @@ def text_features(cian_df: pd.DataFrame) -> pd.DataFrame:
 
     if cian_df.shape[0] == 0:
         return pd.DataFrame()
-    
+
     result = {}
     text_series = cian_df['text'].str.lower()
 
@@ -215,7 +214,7 @@ def featuring_cian_data(
 
     if cian_df.shape[0] == 0:
         return pd.DataFrame()
-    
+
     cian_df.drop(['title'], axis=1, inplace=True)
 
     result = cian_df.join(title_features)\
@@ -237,10 +236,10 @@ def featuring_cian_data(
        compute_kind='SQL')
 def save_data_cian(context, db: DatabaseResource,
                    featurized_cian_data: pd.DataFrame) -> str:
-    
+
     if featurized_cian_data.shape[0] == 0:
         return 'ok'
-    
+
     client = db.get_client()
     client.append_df(featurized_cian_data, 'intel.cian')
 

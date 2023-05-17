@@ -10,9 +10,6 @@ from tqdm import tqdm
 
 tqdm.pandas()
 
-
-
-
 RATE_REQUEST_LIMIT = 1.44
 SLEEP_SECONDS = 5
 BASE_SEARCH_URL = 'https://dom.mingkh.ru/search?searchtype=house&address='
@@ -20,17 +17,13 @@ BASE_URL = 'https://dom.mingkh.ru'
 UA = ('''Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ''' +
       '''(KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36''')
 
-geolocator = Nominatim(
-    timeout=10,
-    user_agent=UA)
+geolocator = Nominatim(timeout=10, user_agent=UA)
 geocode = RateLimiter(geolocator.geocode,
                       min_delay_seconds=RATE_REQUEST_LIMIT,
                       max_retries=2,
                       error_wait_seconds=SLEEP_SECONDS)
 
 warnings.simplefilter('ignore')
-
-
 
 
 def retry(times: int = 2, sleep_timeout: float = SLEEP_SECONDS):

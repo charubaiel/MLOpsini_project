@@ -11,6 +11,7 @@ import boto3
 
 ROOT = Path(__file__).parent
 
+
 class ConfigMLFlow(Config):
 
     MLFLOW_URI: str

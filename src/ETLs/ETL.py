@@ -55,16 +55,18 @@ def parsing_schedule():
     # if np.random.beta(1, 1) >= .5:
     for partition in partition_keys:
         yield RunRequest(run_key=partition,
-                            run_config=run_config,
-                            partition_key=partition)
+                         run_config=run_config,
+                         partition_key=partition)
 
 
 @sensor(job=featurize_job,
-        minimum_interval_seconds=60*5,
+        minimum_interval_seconds=60 * 5,
         default_status=DefaultSensorStatus.RUNNING)
 def check_updates():
-    files = [i.__str__() for i in Path(f'{ROOT.parent.parent}/data/raw').glob('*')]
-    has_new_data = len(files)>0
+    files = [
+        i.__str__() for i in Path(f'{ROOT.parent.parent}/data/raw').glob('*')
+    ]
+    has_new_data = len(files) > 0
     if has_new_data:
         return RunRequest(run_key='|'.join(files))
 

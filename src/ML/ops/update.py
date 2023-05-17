@@ -7,12 +7,8 @@ from mlflow.models.signature import infer_signature
 from sklearn.impute import KNNImputer
 import os
 
-
-
-mlflow.set_tracking_uri(
-    f"http://mlflow_server:{os.getenv('MLFLOW_PORT')}")
+mlflow.set_tracking_uri(f"http://mlflow_server:{os.getenv('MLFLOW_PORT')}")
 mlflow.set_experiment('MLopsProject')
-
 
 
 @asset(
@@ -170,7 +166,6 @@ def fit_model(context, train_data, train_target):
     model.fit(x, y, verbose=500, eval_set=(xv, yv))
 
     return model
-
 
 
 @asset(name='evaluate_model',
